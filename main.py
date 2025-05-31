@@ -4,11 +4,13 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import json
+import os
 import uvicorn
 
 from database import get_db, create_tables, Document, DocumentChunk
 from document_processor import DocumentProcessor
-from embedding_service import embedding_service
+# 경량 임베딩 서비스 사용
+from lightweight_embedding import embedding_service
 from chat_service import chat_service
 
 app = FastAPI(title="N_GPT Document Search", version="1.0.0")

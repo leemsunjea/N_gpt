@@ -22,6 +22,8 @@ ENV/
 data/
 models/
 index/
+faiss_index.bin
+chunk_ids.json
 
 # 로그 파일
 logs/
@@ -39,3 +41,11 @@ __pycache__
 # 테스트 파일
 tests/
 test_*
+
+# 불필요한 패키지 모듈
+sentence_transformers/
+faiss/
+transformers/
+torch/
+tensorflow/
+scipy/
