@@ -32,7 +32,7 @@ RUN chmod +x start.sh
 RUN mkdir -p static
 
 # 필수 패키지만 설치 (최소한의 의존성)
-RUN pip install --no-cache-dir fastapi uvicorn python-multipart jinja2 python-dotenv sqlalchemy asyncpg openai PyPDF2 python-docx aiofiles && \
+RUN pip install --no-cache-dir fastapi uvicorn python-multipart jinja2 python-dotenv sqlalchemy asyncpg openai numpy PyPDF2 python-docx aiofiles && \
     pip cache purge
 
 # 포트 노출

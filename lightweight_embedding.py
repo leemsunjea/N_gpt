@@ -1,6 +1,13 @@
 import os
 import json
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    print("numpy를 찾을 수 없습니다. 설치 중...")
+    import subprocess
+    subprocess.check_call(["pip", "install", "--no-cache-dir", "numpy==1.24.3"])
+    import numpy as np
+
 from sqlalchemy import select
 from database import async_session, DocumentChunk
 import asyncio
