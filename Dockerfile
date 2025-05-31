@@ -25,9 +25,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY main.py chat_service.py document_processor.py lightweight_embedding.py database.py ./
 COPY requirements-minimal.txt ./requirements.txt
 COPY templates templates/
-COPY static static/
 COPY start.sh ./
 RUN chmod +x start.sh
+
+# 필요한 디렉토리 생성
+RUN mkdir -p static
 
 # 필수 패키지만 설치 (최소한의 의존성)
 RUN pip install --no-cache-dir fastapi uvicorn python-multipart jinja2 python-dotenv sqlalchemy asyncpg openai PyPDF2 python-docx aiofiles && \
