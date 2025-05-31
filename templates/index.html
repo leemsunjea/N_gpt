@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N_GPT Document Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/marked/marked.min.js"></script>
+    <style>
+        .chat-message {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .typing-indicator {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- 헤더 -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">📚 N_GPT</h1>
+            <p class="text-gray-600">문서를 업로드하고 AI와 대화하세요</p>
+        </div>
+
+        <!-- 메인 컨테이너 -->
+        <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- 왼쪽: 문서 업로드 & 관리 -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- 문서 업로드 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">📁 문서 업로드</h2>
+                    <form id="uploadForm" class="space-y-4">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                            <input type="file" id="fileInput" accept=".pdf,.docx,.txt" class="hidden">
+                            <label for="fileInput" class="cursor-pointer">
+                                <div class="text-gray-500">
+                                    <svg class="mx-auto h-12 w-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <p class="text-sm">클릭하여 파일 선택</p>
+                                    <p class="text-xs text-gray-400">PDF, DOCX, TXT 지원</p>
+                                </div>
+                            </label>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50" disabled>
+                            업로드
+                        </button>
+                    </form>
+                    <div id="uploadStatus" class="mt-4 text-sm"></div>
+                </div>
+
+                <!-- 문서 목록 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">📋 업로드된 문서</h2>
+                    <div id="documentList" class="space-y-2">
+                        <p class="text-gray-500 text-sm">업로드된 문서가 없습니다.</p>
+                    </div>
+                    <button id="refreshDocs" class="mt-4 w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
+                        새로고침
+                    </button>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 채팅 영역 -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md h-[600px] flex flex-col">
+                    <!-- 채팅 헤더 -->
+                    <div class="p-4 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold text-gray-800">💬 문서 기반 AI 채팅</h2>
+                        <p class="text-sm text-gray-600">업로드된 문서를 바탕으로 질문하세요</p>
+                    </div>
+
+                    <!-- 채팅 메시지 -->
+                    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div class="text-center text-gray-500 text-sm">
+                            <p>👋 안녕하세요! 문서를 업로드한 후 질문해주세요.</p>
+                        </div>
+                    </div>
+
+                    <!-- 채팅 입력 -->
+                    <div class="p-4 border-t border-gray-200">
+                        <form id="chatForm" class="flex space-x-2">
+                            <input type="text" id="chatInput" placeholder="문서에 대해 질문하세요..." 
+                                   class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button type="submit" id="sendButton" 
+                                    class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                                전송
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM 요소들
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const documentList = document.getElementById('documentList');
+        const refreshDocs = document.getElementById('refreshDocs');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+        const sendButton = document.getElementById('sendButton');
+
+        // 파일 선택 이벤트
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            const submitButton = uploadForm.querySelector('button[type="submit"]');
+            
+            if (file) {
+                submitButton.disabled = false;
+                submitButton.textContent = `${file.name} 업로드`;
+            } else {
+                submitButton.disabled = true;
+                submitButton.textContent = '업로드';
+            }
+        });
+
+        // 파일 업로드
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            uploadStatus.innerHTML = '<div class="text-blue-600">업로드 중...</div>';
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    uploadStatus.innerHTML = `<div class="text-green-600">✅ ${result.message}</div>`;
+                    fileInput.value = '';
+                    uploadForm.querySelector('button[type="submit"]').disabled = true;
+                    uploadForm.querySelector('button[type="submit"]').textContent = '업로드';
+                    loadDocuments();
+                } else {
+                    uploadStatus.innerHTML = `<div class="text-red-600">❌ ${result.detail}</div>`;
+                }
+            } catch (error) {
+                uploadStatus.innerHTML = `<div class="text-red-600">❌ 업로드 실패: ${error.message}</div>`;
+            }
+        });
+
+        // 문서 목록 로드
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/documents');
+                const result = await response.json();
+                
+                if (result.documents && result.documents.length > 0) {
+                    documentList.innerHTML = result.documents.map(doc => `
+                        <div class="p-2 bg-gray-50 rounded border">
+                            <div class="font-medium text-sm">${doc.filename}</div>
+                            <div class="text-xs text-gray-500">${new Date(doc.created_at).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    documentList.innerHTML = '<p class="text-gray-500 text-sm">업로드된 문서가 없습니다.</p>';
+                }
+            } catch (error) {
+                console.error('문서 목록 로드 실패:', error);
+            }
+        }
+
+        // 문서 목록 새로고침
+        refreshDocs.addEventListener('click', loadDocuments);
+
+        // 채팅 메시지 추가
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isUser ? 'ml-8' : 'mr-8'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
+                    <div class="${isUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'} rounded-lg p-3 max-w-xl">
+                        <div class="text-sm whitespace-pre-wrap">${isUser ? content : marked.parse(content)}</div>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 타이핑 인디케이터
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'chat-message mr-8';
+            typingDiv.innerHTML = `
+                <div class="flex justify-start">
+                    <div class="bg-gray-200 text-gray-800 rounded-lg p-3">
+                        <div class="typing-indicator text-sm">AI가 답변을 생성하고 있습니다...</div>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (typingDiv) {
+                typingDiv.remove();
+            }
+        }
+
+        // 채팅 폼 제출
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const query = chatInput.value.trim();
+            if (!query) return;
+
+            // 사용자 메시지 추가
+            addMessage(query, true);
+            chatInput.value = '';
+            sendButton.disabled = true;
+            
+            // 타이핑 인디케이터 표시
+            showTypingIndicator();
+
+            try {
+                const formData = new FormData();
+                formData.append('query', query);
+
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                hideTypingIndicator();
+
+                if (!response.ok) {
+                    throw new Error('채팅 요청 실패');
+                }
+
+                // 스트리밍 응답 처리
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let aiResponse = '';
+                
+                // AI 응답 컨테이너 생성
+                const responseDiv = document.createElement('div');
+                responseDiv.className = 'chat-message mr-8';
+                responseDiv.innerHTML = `
+                    <div class="flex justify-start">
+                        <div class="bg-gray-200 text-gray-800 rounded-lg p-3 max-w-xl">
+                            <div class="text-sm markdown-content"></div>
+                        </div>
+                    </div>
+                `;
+                chatMessages.appendChild(responseDiv);
+                const contentDiv = responseDiv.querySelector('.markdown-content');
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.content) {
+                                    aiResponse += data.content;
+                                    contentDiv.innerHTML = marked.parse(aiResponse);
+                                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                                }
+                                if (data.done) {
+                                    break;
+                                }
+                            } catch (e) {
+                                console.error('JSON 파싱 오류:', e);
+                            }
+                        }
+                    }
+                }
+
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage(`오류가 발생했습니다: ${error.message}`);
+            } finally {
+                sendButton.disabled = false;
+            }
+        });
+
+        // 초기 문서 목록 로드
+        loadDocuments();
+    </script>
+</body>
+</html>
