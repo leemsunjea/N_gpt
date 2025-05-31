@@ -43,7 +43,7 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 ENV CLOUDTYPE_DEPLOYMENT=1
-ENV DATABASE_URL=sqlite+aiosqlite:///./app.db
+ENV DATABASE_URL=postgresql+asyncpg://root:sunjea@svc.sel4.cloudtype.app:30173/testdb
 
 # 애플리케이션 실행
 CMD ["./start.sh"]

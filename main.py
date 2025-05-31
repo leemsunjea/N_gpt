@@ -27,20 +27,19 @@ async def startup_event():
     os.makedirs("static", exist_ok=True)
     os.makedirs("templates", exist_ok=True)
     
+    # CloudType 환경에서는 외부 데이터베이스를 사용하므로 테이블 생성을 시도하지 않음
+    if os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1':
+        print("CloudType 환경 감지: 외부 PostgreSQL 데이터베이스 사용 - 테이블 생성 건너뜀")
+        return
+        
     try:
         await create_tables()
         print("데이터베이스 테이블 생성 완료")
     except Exception as e:
         print(f"데이터베이스 초기화 중 오류 발생: {e}")
-        print("SQLite로 대체 시도...")
-        
-        # 환경 변수 강제 설정으로 SQLite 사용 확인
+        # 환경 변수 강제 설정으로 CloudType 환경 인식
         os.environ['CLOUDTYPE_DEPLOYMENT'] = '1'
-        
-        # 데이터베이스 재초기화 시도
-        from database import create_tables
-        await create_tables()
-        print("SQLite 데이터베이스 테이블 생성 완료")
+        print("외부 데이터베이스 사용 모드로 전환")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():

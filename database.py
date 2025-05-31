@@ -11,10 +11,11 @@ load_dotenv()
 IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
 
 # 데이터베이스 URL 설정
-# CloudType 환경에서는 SQLite를 사용하도록 설정
+# CloudType 환경에서는 외부 PostgreSQL 사용
 if IS_CLOUDTYPE:
-    DATABASE_URL = "sqlite+aiosqlite:///./app.db"
-    print(f"CloudType 환경 감지: SQLite 사용 ({DATABASE_URL})")
+    # 외부 PostgreSQL 데이터베이스 연결
+    DATABASE_URL = "postgresql+asyncpg://root:sunjea@svc.sel4.cloudtype.app:30173/testdb"
+    print(f"CloudType 환경 감지: 외부 PostgreSQL 사용 ({DATABASE_URL})")
 else:
     DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost/ngpt")
     print(f"로컬 환경: PostgreSQL 사용 ({DATABASE_URL})")
