@@ -250,10 +250,25 @@ class LightweightEmbeddingService:
         results = []
         
         try:
-            # 단순 키워드 매칭으로 검색
-            query_terms = set(query.lower().split())
+            # CloudType 환경 감지
+            import os
+            IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
             
+            if IS_CLOUDTYPE:
+                print("CloudType 환경: 데이터베이스 연결 건너뜀, 더미 결과 반환")
+                # CloudType 환경에서는 더미 응답 반환
+                return [{
+                    'chunk_id': 1,
+                    'text': f"CloudType 환경에서 '{query}'에 대한 기본 응답입니다. 현재 데이터베이스 연결에 문제가 있어 저장된 문서를 검색할 수 없습니다.",
+                    'score': 0.5,
+                    'document_id': 1
+                }]
+            
+            # 로컬 환경에서만 실제 데이터베이스 검색 수행
             async with async_session() as session:
+                # 단순 키워드 매칭으로 검색
+                query_terms = set(query.lower().split())
+                
                 # 최근 문서 청크 가져오기
                 stmt = select(DocumentChunk).order_by(DocumentChunk.id.desc()).limit(100)
                 result = await session.execute(stmt)

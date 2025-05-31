@@ -253,15 +253,28 @@ async def chat_with_documents(
 ):
     """문서 기반 채팅 (스트리밍)"""
     try:
+        # CloudType 환경 감지
+        IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
+        
+        if IS_CLOUDTYPE:
+            print(f"CloudType 환경에서 채팅 요청: {query}")
+        
         # 관련 문서 검색
         context_chunks = await embedding_service.search_similar(query, k=3)
         
         if not context_chunks:
             async def no_context_stream():
-                yield "data: " + json.dumps({
-                    "content": "죄송합니다. 업로드된 문서에서 관련 정보를 찾을 수 없습니다.",
-                    "done": True
-                }) + "\n\n"
+                if IS_CLOUDTYPE:
+                    # CloudType 환경에서는 기본 응답 제공
+                    yield "data: " + json.dumps({
+                        "content": f"CloudType 환경에서 '{query}'에 대한 응답입니다. 현재 문서 검색 기능이 제한되어 있어 기본 응답을 제공합니다. 일반적인 질문이시라면 OpenAI GPT를 통해 답변드릴 수 있습니다.",
+                        "done": True
+                    }) + "\n\n"
+                else:
+                    yield "data: " + json.dumps({
+                        "content": "죄송합니다. 업로드된 문서에서 관련 정보를 찾을 수 없습니다.",
+                        "done": True
+                    }) + "\n\n"
             
             return StreamingResponse(
                 no_context_stream(),
@@ -302,6 +315,7 @@ async def chat_with_documents(
                 }) + "\n\n"
                 
             except Exception as e:
+                print(f"스트리밍 중 오류: {e}")
                 yield "data: " + json.dumps({
                     "content": f"스트리밍 중 오류: {str(e)}",
                     "done": True
@@ -314,11 +328,21 @@ async def chat_with_documents(
         )
         
     except Exception as e:
+        print(f"채팅 API 오류: {e}")
+        import traceback
+        print(traceback.format_exc())
+        
         async def error_stream():
             yield "data: " + json.dumps({
                 "content": f"채팅 실패: {str(e)}",
                 "done": True
             }) + "\n\n"
+        
+        return StreamingResponse(
+            error_stream(),
+            media_type="text/plain",
+            headers={"Cache-Control": "no-cache"}
+        )
         
         return StreamingResponse(
             error_stream(),
