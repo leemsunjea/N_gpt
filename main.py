@@ -27,8 +27,20 @@ async def startup_event():
     os.makedirs("static", exist_ok=True)
     os.makedirs("templates", exist_ok=True)
     
-    await create_tables()
-    print("데이터베이스 테이블 생성 완료")
+    try:
+        await create_tables()
+        print("데이터베이스 테이블 생성 완료")
+    except Exception as e:
+        print(f"데이터베이스 초기화 중 오류 발생: {e}")
+        print("SQLite로 대체 시도...")
+        
+        # 환경 변수 강제 설정으로 SQLite 사용 확인
+        os.environ['CLOUDTYPE_DEPLOYMENT'] = '1'
+        
+        # 데이터베이스 재초기화 시도
+        from database import create_tables
+        await create_tables()
+        print("SQLite 데이터베이스 테이블 생성 완료")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():

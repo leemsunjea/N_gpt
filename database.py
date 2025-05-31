@@ -7,7 +7,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# CloudType 환경 감지
+IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
+
+# 데이터베이스 URL 설정
+# CloudType 환경에서는 SQLite를 사용하도록 설정
+if IS_CLOUDTYPE:
+    DATABASE_URL = "sqlite+aiosqlite:///./app.db"
+    print(f"CloudType 환경 감지: SQLite 사용 ({DATABASE_URL})")
+else:
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost/ngpt")
+    print(f"로컬 환경: PostgreSQL 사용 ({DATABASE_URL})")
 
 # 엔진 생성
 engine = create_async_engine(DATABASE_URL, echo=True)
