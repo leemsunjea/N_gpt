@@ -85,20 +85,15 @@ class DocumentChunk(Base):
 async def get_db():
     session = async_session()
     try:
-        if not IS_CLOUDTYPE:
-            # 로컬 환경에서만 연결 테스트
-            await session.execute("SELECT 1")
-            print("DB 연결 테스트 성공")
         yield session
     except Exception as e:
-        print(f"DB 세션 생성 또는 연결 테스트 오류: {str(e)}")
+        print(f"DB 세션 생성 오류: {str(e)}")
         import traceback
         print(traceback.format_exc())
-        await session.close()
+        await session.rollback()
         raise  # 예외를 다시 발생시켜 FastAPI가 처리하도록 함
     finally:
         await session.close()
-        print("DB 세션 닫기 성공")
         
 # 테이블 생성
 async def create_tables():

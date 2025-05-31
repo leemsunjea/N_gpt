@@ -42,28 +42,25 @@ async def startup_event():
     if not os.path.exists(template_path):
         print(f"{template_path} 파일이 없습니다. CloudType 환경에서는 파일을 직접 생성할 수 없습니다.")
     
-    # CloudType 환경에서는 외부 데이터베이스를 사용하므로 테이블 생성을 시도하지 않음
-    if os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1':
-        print("CloudType 환경 감지: 외부 PostgreSQL 데이터베이스 사용 - 테이블 생성 건너뜀")
-        return
-    
     # 정적 파일 확인
     css_path = "static/style.css"
     if not os.path.exists(css_path):
         print(f"{css_path} 파일이 없어 기본 스타일을 생성합니다.")
-        with open(css_path, "w", encoding="utf-8") as f:
-            f.write("body { font-family: Arial, sans-serif; }")
-    
-    # CloudType 환경에서는 외부 데이터베이스를 사용하므로 테이블 생성을 시도하지 않음
-    if os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1':
-        print("CloudType 환경 감지: 외부 PostgreSQL 데이터베이스 사용 - 테이블 생성 건너뜀")
-        return
+        try:
+            with open(css_path, "w", encoding="utf-8") as f:
+                f.write("body { font-family: Arial, sans-serif; }")
+        except Exception as css_err:
+            print(f"CSS 파일 생성 실패: {css_err}")
         
+    # 모든 환경에서 테이블 생성 시도
     try:
+        print("데이터베이스 테이블 생성 시도...")
         await create_tables()
         print("데이터베이스 테이블 생성 완료")
     except Exception as e:
         print(f"데이터베이스 초기화 중 오류 발생: {e}")
+        import traceback
+        print(traceback.format_exc())
         # 환경 변수 강제 설정으로 CloudType 환경 인식
         os.environ['CLOUDTYPE_DEPLOYMENT'] = '1'
         print("외부 데이터베이스 사용 모드로 전환")
