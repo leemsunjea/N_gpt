@@ -11,11 +11,20 @@ load_dotenv()
 IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
 
 # 데이터베이스 URL 설정
+# 데이터베이스 URL 설정
 # CloudType 환경에서는 외부 PostgreSQL 사용
 if IS_CLOUDTYPE:
     # 외부 PostgreSQL 데이터베이스 연결
-    DATABASE_URL = "postgresql+asyncpg://root:sunjea@svc.sel4.cloudtype.app:30173/testdb"
+    DB_USER = os.getenv("DB_USER", "root")
+    DB_PASSWORD = os.getenv("DB_PASSWORD", "sunjea")
+    DB_HOST = os.getenv("DB_HOST", "svc.sel4.cloudtype.app")
+    DB_PORT = os.getenv("DB_PORT", "30173")
+    DB_NAME = os.getenv("DB_NAME", "testdb")
+    
+    DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     print(f"CloudType 환경 감지: 외부 PostgreSQL 사용 ({DATABASE_URL})")
+    print(f"환경 변수: CLOUDTYPE_DEPLOYMENT={os.environ.get('CLOUDTYPE_DEPLOYMENT')}")
+    print(f"환경 변수: DATABASE_URL={os.environ.get('DATABASE_URL')}")
 else:
     DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost/ngpt")
     print(f"로컬 환경: PostgreSQL 사용 ({DATABASE_URL})")
@@ -50,11 +59,30 @@ class DocumentChunk(Base):
 
 # 데이터베이스 의존성
 async def get_db():
-    async with async_session() as session:
-        try:
+    session = None
+    try:
+        session = async_session()
+        print("DB 세션 생성 성공")
+        yield session
+    except Exception as e:
+        print(f"DB 세션 생성 오류: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        
+        # 예외가 발생하더라도 세션은 반환해야 함
+        if session:
             yield session
-        finally:
-            await session.close()
+        else:
+            # 연결 실패 시 빈 세션 반환
+            print("대체 세션 생성")
+            yield async_session()
+    finally:
+        if session:
+            try:
+                await session.close()
+                print("DB 세션 닫기 성공")
+            except Exception as e:
+                print(f"DB 세션 닫기 오류: {str(e)}")
 
 # 테이블 생성
 async def create_tables():

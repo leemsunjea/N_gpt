@@ -16,7 +16,21 @@ echo "Starting server with minimal dependencies..."
 # 환경 변수 설정 - 외부 PostgreSQL 데이터베이스 사용
 export CLOUDTYPE_DEPLOYMENT=1
 export PYTHONUNBUFFERED=1
-export DATABASE_URL="postgresql+asyncpg://root:sunjea@svc.sel4.cloudtype.app:30173/testdb"
+
+# 데이터베이스 연결 환경 변수
+export DB_USER=${DB_USER:-"root"}
+export DB_PASSWORD=${DB_PASSWORD:-"sunjea"}
+export DB_HOST=${DB_HOST:-"svc.sel4.cloudtype.app"}
+export DB_PORT=${DB_PORT:-"30173"}
+export DB_NAME=${DB_NAME:-"testdb"}
+
+# 연결 테스트용 로깅
+echo "데이터베이스 연결 정보:"
+echo "DB_USER: $DB_USER"
+echo "DB_HOST: $DB_HOST"
+echo "DB_PORT: $DB_PORT"
+echo "DB_NAME: $DB_NAME"
 
 # 서버 시작
-exec uvicorn main:app --host 0.0.0.0 --port $PORT
+echo "서버 시작 중..."
+exec uvicorn main:app --host 0.0.0.0 --port $PORT --log-level debug

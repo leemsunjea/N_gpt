@@ -43,7 +43,12 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 ENV CLOUDTYPE_DEPLOYMENT=1
-ENV DATABASE_URL=postgresql+asyncpg://root:sunjea@svc.sel4.cloudtype.app:30173/testdb
+# 데이터베이스 연결 환경 변수
+ENV DB_USER=root
+ENV DB_PASSWORD=sunjea
+ENV DB_HOST=svc.sel4.cloudtype.app
+ENV DB_PORT=30173
+ENV DB_NAME=testdb
 
 # 애플리케이션 실행
 CMD ["./start.sh"]
