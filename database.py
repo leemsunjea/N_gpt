@@ -11,26 +11,50 @@ load_dotenv()
 IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
 
 # 데이터베이스 URL 설정
-# 데이터베이스 URL 설정
-# CloudType 환경에서는 외부 PostgreSQL 사용
 if IS_CLOUDTYPE:
-    # 외부 PostgreSQL 데이터베이스 연결
-    DB_USER = os.getenv("DB_USER", "root")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "sunjea")
-    DB_HOST = os.getenv("DB_HOST", "svc.sel4.cloudtype.app")
-    DB_PORT = os.getenv("DB_PORT", "30173")
-    DB_NAME = os.getenv("DB_NAME", "testdb")
+    # CloudType 환경: 외부 PostgreSQL 사용
+    # 환경 변수에서 직접 가져오기
+    DATABASE_URL = os.getenv("DATABASE_URL")
     
-    DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    if not DATABASE_URL:
+        # 개별 환경 변수로 구성
+        DB_USER = os.getenv("DB_USER", "root")
+        DB_PASSWORD = os.getenv("DB_PASSWORD", "sunjea")
+        DB_HOST = os.getenv("DB_HOST", "svc.sel4.cloudtype.app")
+        DB_PORT = os.getenv("DB_PORT", "30173")
+        DB_NAME = os.getenv("DB_NAME", "testdb")
+        DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    
     print(f"CloudType 환경 감지: 외부 PostgreSQL 사용 ({DATABASE_URL})")
     print(f"환경 변수: CLOUDTYPE_DEPLOYMENT={os.environ.get('CLOUDTYPE_DEPLOYMENT')}")
     print(f"환경 변수: DATABASE_URL={os.environ.get('DATABASE_URL')}")
 else:
-    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost/ngpt")
-    print(f"로컬 환경: PostgreSQL 사용 ({DATABASE_URL})")
+    # 로컬 환경: SQLite 사용 (더 간단하고 안정적)
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./ngpt.db")
+    print(f"로컬 환경: SQLite 사용 ({DATABASE_URL})")
 
 # 엔진 생성
-engine = create_async_engine(DATABASE_URL, echo=True)
+if IS_CLOUDTYPE:
+    # CloudType 환경에서는 연결 풀 옵션 조정
+    engine = create_async_engine(
+        DATABASE_URL,
+        echo=True,
+        pool_size=5,
+        max_overflow=10,
+        pool_timeout=30,
+        pool_recycle=3600,
+        connect_args={
+            "connect_timeout": 60,
+            "command_timeout": 60,
+            "server_settings": {
+                "application_name": "N_GPT_CloudType",
+                "jit": "off"
+            }
+        }
+    )
+else:
+    # 로컬 환경
+    engine = create_async_engine(DATABASE_URL, echo=True)
 
 # 세션 팩토리
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -63,19 +87,35 @@ async def get_db():
     try:
         session = async_session()
         print("DB 세션 생성 성공")
+        
+        # CloudType 환경에서는 연결 테스트를 건너뛰고 오프라인 모드로 동작
+        if IS_CLOUDTYPE:
+            print("CloudType 환경: 오프라인 모드로 동작 (연결 테스트 건너뜀)")
+            yield session
+            return
+        
+        # 로컬 환경에서만 연결 테스트
+        try:
+            # 간단한 연결 테스트
+            await session.execute("SELECT 1")
+            print("DB 연결 테스트 성공")
+        except Exception as test_error:
+            print(f"DB 연결 테스트 실패: {str(test_error)}")
+            # 연결 실패 시에도 세션은 반환 (오프라인 모드)
+        
         yield session
+        
     except Exception as e:
         print(f"DB 세션 생성 오류: {str(e)}")
         import traceback
         print(traceback.format_exc())
         
-        # 예외가 발생하더라도 세션은 반환해야 함
-        if session:
-            yield session
-        else:
-            # 연결 실패 시 빈 세션 반환
+        # 연결 실패 시에도 세션은 반환 (오프라인 모드)
+        if session is None:
+            session = async_session()
             print("대체 세션 생성")
-            yield async_session()
+        yield session
+        
     finally:
         if session:
             try:

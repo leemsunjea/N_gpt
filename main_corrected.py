@@ -335,16 +335,17 @@ async def list_documents(db: AsyncSession = Depends(get_db)):
         print(f"CloudType 환경: {os.environ.get('CLOUDTYPE_DEPLOYMENT', '0')}")
         print(f"DATABASE_URL: {os.environ.get('DATABASE_URL', 'Not set')}")
         
-        # CloudType 환경에서는 항상 빈 목록 반환 (임시 조치)
+        # CloudType 환경에서는 데이터베이스 연결을 시도하지 않음 (임시 조치)
         if os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1':
-            print("CloudType 환경 감지: 빈 목록 반환")
-            return {
-                "documents": [], 
-                "message": "CloudType 환경에서는 데이터베이스 연결이 제한됩니다. 문서 업로드 기능을 이용하여 새로운 문서를 추가하세요."
-            }
+            print("CloudType 환경 감지: 데이터베이스 연결을 건너뛰고 빈 목록 반환")
+            return {"documents": [], "message": "CloudType 환경에서는 데이터베이스 연결이 제한됩니다."}
         
         # 로컬 환경에서만 데이터베이스 조회 시도
         try:
+            # 간단한 연결 테스트
+            await db.execute("SELECT 1")
+            print("데이터베이스 연결 테스트 성공")
+            
             # 쿼리 생성 및 실행
             stmt = select(Document).order_by(Document.created_at.desc())
             print(f"쿼리 생성: {stmt}")
@@ -367,14 +368,19 @@ async def list_documents(db: AsyncSession = Depends(get_db)):
             
         except Exception as db_err:
             print(f"데이터베이스 조회 실패: {str(db_err)}")
+            import traceback
+            print(traceback.format_exc())
             # 데이터베이스 실패 시에도 빈 목록 반환
             return {"documents": [], "error": f"데이터베이스 조회 실패: {str(db_err)}"}
             
     except Exception as e:
-        print(f"문서 목록 조회 실패: {str(e)}")
+        print(f"문서 목록 조회 실패 상세 오류: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        
         # 모든 환경에서 오류 발생 시 빈 목록 반환
+        print("예외 발생으로 인한 빈 목록 반환")
         return {"documents": [], "error": f"예외 발생: {str(e)}"}
-        raise HTTPException(status_code=500, detail=f"문서 목록 조회 실패: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
