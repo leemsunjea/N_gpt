@@ -44,7 +44,7 @@ if IS_CLOUDTYPE:
         pool_timeout=30,
         pool_recycle=3600,
         connect_args={
-            "connect_timeout": 60,
+            "timeout": 60,  # 'connect_timeout'에서 'timeout'으로 변경
             "command_timeout": 60,
             "server_settings": {
                 "application_name": "N_GPT_CloudType",
