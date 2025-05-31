@@ -1,0 +1,41 @@
+# Python 캐시 파일
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 가상 환경
+venv/
+env/
+ENV/
+
+# 데이터 및 모델 파일
+*.model
+*.bin
+*.pt
+*.pth
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+data/
+models/
+index/
+
+# 로그 파일
+logs/
+*.log
+
+# 개발 관련 파일
+.git
+.github
+.gitignore
+.vscode
+__pycache__
+*.swp
+*.swo
+
+# 테스트 파일
+tests/
+test_*

@@ -19,6 +19,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.on_event("startup")
 async def startup_event():
     """애플리케이션 시작 시 초기화"""
+    import os
+    
+    # 필요한 디렉토리 생성
+    os.makedirs("static", exist_ok=True)
+    os.makedirs("templates", exist_ok=True)
+    
     await create_tables()
     print("데이터베이스 테이블 생성 완료")
 

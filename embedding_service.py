@@ -9,9 +9,9 @@ import asyncio
 
 class EmbeddingService:
     def __init__(self):
-        # 임베딩 모델 초기화
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.dimension = 384  # all-MiniLM-L6-v2의 차원
+        # 임베딩 모델 초기화 - 더 작은 모델 사용
+        self.model = SentenceTransformer('paraphrase-MiniLM-L3-v2')  # 더 작은 모델로 변경
+        self.dimension = 384  # 임베딩 차원
         
         # FAISS 인덱스 초기화
         self.index = faiss.IndexFlatIP(self.dimension)  # Inner Product (코사인 유사도)
