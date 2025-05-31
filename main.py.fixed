@@ -52,7 +52,311 @@ async def startup_event():
     if not os.path.exists(css_path):
         print(f"{css_path} 파일이 없어 기본 스타일을 생성합니다.")
         with open(css_path, "w", encoding="utf-8") as f:
-            f.write("body { font-family: Arial, sans-serif; }")
+            f.write("""body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+h2 {
+    color: #444;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.upload-section, .documents-section, .search-section, .chat-section {
+    margin-bottom: 30px;
+}
+
+form {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+input[type="text"], input[type="file"] {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button {
+    padding: 8px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#upload-status, #search-results {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#documents-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+#documents-list li {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+#chat-messages {
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.user-message, .assistant-message {
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.user-message {
+    background-color: #e1f5fe;
+    text-align: right;
+}
+
+.assistant-message {
+    background-color: #f0f0f0;
+}""")
+    
+    js_path = "static/main.js"
+    if not os.path.exists(js_path):
+        print(f"{js_path} 파일이 없어 기본 스크립트를 생성합니다.")
+        with open(js_path, "w", encoding="utf-8") as f:
+            f.write("""document.addEventListener('DOMContentLoaded', function() {
+    // 문서 목록 로드
+    loadDocuments();
+    
+    // 폼 제출 이벤트 리스너
+    document.getElementById('upload-form').addEventListener('submit', uploadDocument);
+    document.getElementById('search-form').addEventListener('submit', searchDocuments);
+    document.getElementById('chat-form').addEventListener('submit', startChat);
+});
+
+// 문서 업로드
+async function uploadDocument(event) {
+    event.preventDefault();
+    
+    const fileInput = document.getElementById('file');
+    const statusDiv = document.getElementById('upload-status');
+    
+    if (!fileInput.files.length) {
+        statusDiv.textContent = '파일을 선택해주세요.';
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    statusDiv.textContent = '업로드 중...';
+    
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            statusDiv.textContent = result.message;
+            loadDocuments();  // 목록 새로고침
+        } else {
+            statusDiv.textContent = `오류: ${result.detail}`;
+        }
+    } catch (error) {
+        statusDiv.textContent = `업로드 중 오류 발생: ${error.message}`;
+    }
+}
+
+// 문서 목록 로드
+async function loadDocuments() {
+    const listElement = document.getElementById('documents-list');
+    listElement.innerHTML = '로딩 중...';
+    
+    try {
+        const response = await fetch('/documents');
+        const result = await response.json();
+        
+        if (response.ok) {
+            if (result.documents && result.documents.length > 0) {
+                listElement.innerHTML = '';
+                result.documents.forEach(doc => {
+                    const li = document.createElement('li');
+                    const date = new Date(doc.created_at).toLocaleString();
+                    li.textContent = `${doc.filename} (업로드: ${date})`;
+                    listElement.appendChild(li);
+                });
+            } else {
+                listElement.innerHTML = '업로드된 문서가 없습니다.';
+            }
+        } else {
+            listElement.innerHTML = `오류: ${result.detail || '문서 목록을 가져올 수 없습니다.'}`;
+        }
+    } catch (error) {
+        listElement.innerHTML = `문서 목록을 가져오는 중 오류 발생: ${error.message}`;
+    }
+}
+
+// 문서 검색
+async function searchDocuments(event) {
+    event.preventDefault();
+    
+    const queryInput = document.getElementById('query');
+    const resultsDiv = document.getElementById('search-results');
+    
+    if (!queryInput.value.trim()) {
+        resultsDiv.innerHTML = '검색어를 입력해주세요.';
+        return;
+    }
+    
+    resultsDiv.innerHTML = '검색 중...';
+    
+    const formData = new FormData();
+    formData.append('query', queryInput.value);
+    
+    try {
+        const response = await fetch('/search', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            if (result.results && result.results.length > 0) {
+                resultsDiv.innerHTML = `<p>${result.message}</p>`;
+                
+                const ol = document.createElement('ol');
+                result.results.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<div>${item.text}</div><small>관련도: ${Math.round(item.score * 100)}%</small>`;
+                    ol.appendChild(li);
+                });
+                
+                resultsDiv.appendChild(ol);
+            } else {
+                resultsDiv.innerHTML = '관련 문서를 찾을 수 없습니다.';
+            }
+        } else {
+            resultsDiv.innerHTML = `오류: ${result.detail}`;
+        }
+    } catch (error) {
+        resultsDiv.innerHTML = `검색 중 오류 발생: ${error.message}`;
+    }
+}
+
+// 문서 기반 채팅
+async function startChat(event) {
+    event.preventDefault();
+    
+    const queryInput = document.getElementById('chat-query');
+    const chatDiv = document.getElementById('chat-messages');
+    
+    if (!queryInput.value.trim()) {
+        return;
+    }
+    
+    // 사용자 메시지 추가
+    const userDiv = document.createElement('div');
+    userDiv.className = 'user-message';
+    userDiv.textContent = queryInput.value;
+    chatDiv.appendChild(userDiv);
+    
+    // 스크롤 아래로
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+    
+    const formData = new FormData();
+    formData.append('query', queryInput.value);
+    
+    // 입력 필드 초기화
+    const question = queryInput.value;
+    queryInput.value = '';
+    
+    // 응답 메시지 컨테이너 추가
+    const responseDiv = document.createElement('div');
+    responseDiv.className = 'assistant-message';
+    responseDiv.textContent = '생각 중...';
+    chatDiv.appendChild(responseDiv);
+    
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        responseDiv.textContent = '';
+        
+        while (true) {
+            const { value, done } = await reader.read();
+            
+            if (done) {
+                break;
+            }
+            
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n\n');
+            
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.slice(6));
+                    
+                    if (data.content) {
+                        responseDiv.innerHTML += data.content;
+                    }
+                    
+                    // 스크롤 아래로
+                    chatDiv.scrollTop = chatDiv.scrollHeight;
+                }
+            }
+        }
+    } catch (error) {
+        responseDiv.textContent = `오류가 발생했습니다: ${error.message}`;
+    }
+    
+    // 스크롤 아래로
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+""")
     
     # CloudType 환경에서는 외부 데이터베이스를 사용하므로 테이블 생성을 시도하지 않음
     if os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1':
