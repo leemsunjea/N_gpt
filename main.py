@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import json
-import asyncio
+import uvicorn
 
 from database import get_db, create_tables, Document, DocumentChunk
 from document_processor import DocumentProcessor
