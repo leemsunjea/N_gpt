@@ -83,47 +83,23 @@ class DocumentChunk(Base):
 
 # 데이터베이스 의존성
 async def get_db():
-    session = None
+    session = async_session()
     try:
-        session = async_session()
-        print("DB 세션 생성 성공")
-        
-        # CloudType 환경에서는 연결 테스트를 건너뛰고 오프라인 모드로 동작
-        if IS_CLOUDTYPE:
-            print("CloudType 환경: 오프라인 모드로 동작 (연결 테스트 건너뜀)")
-            yield session
-            return
-        
-        # 로컬 환경에서만 연결 테스트
-        try:
-            # 간단한 연결 테스트
+        if not IS_CLOUDTYPE:
+            # 로컬 환경에서만 연결 테스트
             await session.execute("SELECT 1")
             print("DB 연결 테스트 성공")
-        except Exception as test_error:
-            print(f"DB 연결 테스트 실패: {str(test_error)}")
-            # 연결 실패 시에도 세션은 반환 (오프라인 모드)
-        
         yield session
-        
     except Exception as e:
-        print(f"DB 세션 생성 오류: {str(e)}")
+        print(f"DB 세션 생성 또는 연결 테스트 오류: {str(e)}")
         import traceback
         print(traceback.format_exc())
-        
-        # 연결 실패 시에도 세션은 반환 (오프라인 모드)
-        if session is None:
-            session = async_session()
-            print("대체 세션 생성")
-        yield session
-        
+        await session.close()
+        raise  # 예외를 다시 발생시켜 FastAPI가 처리하도록 함
     finally:
-        if session:
-            try:
-                await session.close()
-                print("DB 세션 닫기 성공")
-            except Exception as e:
-                print(f"DB 세션 닫기 오류: {str(e)}")
-
+        await session.close()
+        print("DB 세션 닫기 성공")
+        
 # 테이블 생성
 async def create_tables():
     async with engine.begin() as conn:
