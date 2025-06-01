@@ -17,8 +17,8 @@ class EmbeddingService:
         self.index = faiss.IndexFlatIP(self.dimension)  # Inner Product (코사인 유사도)
         
         # 인덱스 파일 경로
-        self.index_path = "faiss_index.bin"
-        self.chunk_ids_path = "chunk_ids.json"
+        self.index_path = "static/faiss_index.bin"
+        self.chunk_ids_path = "static/chunk_ids.json"
         
         # 기존 인덱스 로드
         self.chunk_ids = []
