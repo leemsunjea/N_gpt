@@ -4,7 +4,6 @@ import openai
 class ChatService:
     def __init__(self):
         openai.api_key = os.environ.get("OPENAI_API_KEY")
-        self.client = openai
         # CloudType 환경 감지
         self.is_cloudtype = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
     
@@ -50,7 +49,7 @@ class ChatService:
 답변을 마크다운 형식으로 작성해주세요."""
 
             # 스트리밍 응답 생성
-            stream = await self.client.chat.completions.create(
+            stream = await openai.ChatCompletion.acreate(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": system_prompt},
