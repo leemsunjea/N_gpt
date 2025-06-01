@@ -71,7 +71,69 @@ class ChatService:
             print(f"GPT 응답 생성 실패: {e}")
             import traceback
             print(traceback.format_exc())
-            return None
+            
+            # API 할당량 초과 또는 기타 오류 시 대체 응답 생성
+            return self._generate_fallback_response(query, context_chunks, str(e))
+    
+    def _generate_fallback_response(self, query, context_chunks, error_msg):
+        """API 오류 시 대체 응답 생성"""
+        async def fallback_stream():
+            # 할당량 초과 확인
+            if "quota" in error_msg.lower() or "429" in error_msg:
+                fallback_content = f"""## 📚 문서 기반 응답
+
+**질문**: {query}
+
+**참고 문서**:
+"""
+                
+                # 컨텍스트가 있으면 관련 내용 표시
+                if context_chunks:
+                    for i, chunk in enumerate(context_chunks):
+                        text = chunk.get('text', '')[:200] + "..." if len(chunk.get('text', '')) > 200 else chunk.get('text', '')
+                        fallback_content += f"\n**문서 {i+1}**:\n{text}\n"
+                    
+                    fallback_content += f"""
+**답변**: 죄송합니다. 현재 AI 서비스 할당량이 초과되어 자동 응답을 생성할 수 없습니다. 
+하지만 위의 관련 문서 내용을 참고하시면 '{query}'에 대한 정보를 찾으실 수 있습니다.
+
+문서를 직접 확인해보시기 바랍니다. 🔍
+"""
+                else:
+                    fallback_content = f"""## ❌ 검색 결과 없음
+
+**질문**: {query}
+
+죄송합니다. 업로드된 문서에서 관련 정보를 찾을 수 없습니다.
+다른 키워드로 다시 검색해보시거나 관련 문서를 업로드해주세요.
+"""
+            else:
+                fallback_content = f"""## ⚠️ 일시적 오류
+
+**질문**: {query}
+
+죄송합니다. 일시적인 시스템 오류가 발생했습니다.
+잠시 후 다시 시도해주세요.
+
+**오류 내용**: {error_msg}
+"""
+            
+            # 청크 단위로 스트리밍 시뮬레이션
+            chunks = fallback_content.split('\n')
+            for chunk in chunks:
+                if chunk.strip():
+                    yield type('MockChunk', (), {
+                        'choices': [type('Choice', (), {
+                            'delta': type('Delta', (), {
+                                'content': chunk + '\n'
+                            })()
+                        })()]
+                    })()
+                    # 약간의 지연으로 스트리밍 효과
+                    import asyncio
+                    await asyncio.sleep(0.05)
+        
+        return fallback_stream()
 
 # 전역 채팅 서비스 인스턴스
 chat_service = ChatService()

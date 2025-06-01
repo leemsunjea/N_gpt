@@ -272,26 +272,29 @@ async def chat_with_documents(
         # GPT 스트리밍 응답 생성
         stream = await chat_service.generate_response_stream(query, context_chunks)
         
-        if not stream:
-            async def error_stream():
-                yield "data: " + json.dumps({
-                    "content": "응답 생성 중 오류가 발생했습니다.",
-                    "done": True
-                }) + "\n\n"
-            
-            return StreamingResponse(
-                error_stream(),
-                media_type="text/plain",
-                headers={"Cache-Control": "no-cache"}
-            )
-        
+        # stream이 None이어도 대체 응답이 생성되므로 처리 계속
         async def generate_stream():
             try:
-                async for chunk in stream:
-                    if chunk.choices[0].delta.content:
-                        content = chunk.choices[0].delta.content
+                if stream:
+                    async for chunk in stream:
+                        if hasattr(chunk, 'choices') and len(chunk.choices) > 0:
+                            if hasattr(chunk.choices[0], 'delta') and hasattr(chunk.choices[0].delta, 'content'):
+                                content = chunk.choices[0].delta.content
+                                if content:
+                                    yield "data: " + json.dumps({
+                                        "content": content,
+                                        "done": False
+                                    }) + "\n\n"
+                else:
+                    # 대체 응답
+                    if IS_CLOUDTYPE:
                         yield "data: " + json.dumps({
-                            "content": content,
+                            "content": f"## CloudType 환경 응답\n\n**질문**: {query}\n\n현재 AI 서비스가 일시적으로 제한되어 있습니다. 업로드된 문서를 직접 확인해보시기 바랍니다.",
+                            "done": False
+                        }) + "\n\n"
+                    else:
+                        yield "data: " + json.dumps({
+                            "content": "## ⚠️ 응답 생성 제한\n\n현재 AI 응답 생성이 제한되어 있습니다. 잠시 후 다시 시도해주세요.",
                             "done": False
                         }) + "\n\n"
                 
@@ -304,7 +307,7 @@ async def chat_with_documents(
             except Exception as e:
                 print(f"스트리밍 중 오류: {e}")
                 yield "data: " + json.dumps({
-                    "content": f"스트리밍 중 오류: {str(e)}",
+                    "content": f"## ❌ 스트리밍 오류\n\n{str(e)}",
                     "done": True
                 }) + "\n\n"
         
