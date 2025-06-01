@@ -19,6 +19,8 @@ class EmbeddingService:
         # 인덱스 파일 경로
         self.index_path = "static/faiss_index.bin"
         self.chunk_ids_path = "static/chunk_ids.json"
+        # Ensure directory exists for index files
+        os.makedirs(os.path.dirname(self.index_path), exist_ok=True)
         
         # 기존 인덱스 로드
         self.chunk_ids = []

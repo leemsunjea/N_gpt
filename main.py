@@ -153,7 +153,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def startup_event():
     """애플리케이션 시작 시 초기화"""
     import os
-    
+    # 서버 시작 시 DB 초기화: 모든 테이블 삭제 후 재생성
+    from database import engine, Base
+    print("서버 시작 시 DB 초기화 중...")
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+    print("DB 초기화 완료: 모든 테이블이 재생성되었습니다.")
+
     # 필요한 디렉토리 생성 시도 (권한 문제가 있을 수 있음)
     try:
         os.makedirs("static", exist_ok=True)
