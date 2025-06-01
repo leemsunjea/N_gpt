@@ -1,12 +1,12 @@
 import os
-import openai
+from openai import OpenAI
 
 class ChatService:
     def __init__(self):
-        openai.api_key = os.environ.get("OPENAI_API_KEY")
         # CloudType 환경 감지
         self.is_cloudtype = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
-        self.client = openai  # use openai client for streaming
+        # OpenAI Async client 초기화
+        self.client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
     async def generate_response_stream(self, query, context_chunks):
         """컨텍스트를 기반으로 스트리밍 응답 생성"""
@@ -49,8 +49,8 @@ class ChatService:
 
 답변을 마크다운 형식으로 작성해주세요."""
 
-            # 스트리밍 응답 생성 (v1 interface)
-            openai_response_stream = await openai.ChatCompletion.acreate(
+            # 스트리밍 응답 생성 (v1 인터페이스)
+            openai_response_stream = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": system_prompt},
