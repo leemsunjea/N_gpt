@@ -1,9 +1,16 @@
 import os
 import PyPDF2
 import docx
+import re
 from io import BytesIO
+from text_cleaner import TextCleaner
 
 class DocumentProcessor:
+    @staticmethod
+    def clean_text(text):
+        """텍스트에서 문제가 될 수 있는 문자들을 정제"""
+        return TextCleaner.clean_for_postgresql(text)
+    
     @staticmethod
     def extract_text_from_pdf(file_content):
         """PDF에서 텍스트 추출"""
@@ -12,7 +19,9 @@ class DocumentProcessor:
             text = ""
             for page in pdf_reader.pages:
                 text += page.extract_text() + "\n"
-            return text.strip()
+            # 텍스트 정제
+            text = DocumentProcessor.clean_text(text)
+            return text
         except Exception as e:
             print(f"PDF 텍스트 추출 실패: {e}")
             return ""
@@ -25,7 +34,9 @@ class DocumentProcessor:
             text = ""
             for paragraph in doc.paragraphs:
                 text += paragraph.text + "\n"
-            return text.strip()
+            # 텍스트 정제
+            text = DocumentProcessor.clean_text(text)
+            return text
         except Exception as e:
             print(f"DOCX 텍스트 추출 실패: {e}")
             return ""
@@ -34,7 +45,10 @@ class DocumentProcessor:
     def extract_text_from_txt(file_content):
         """TXT에서 텍스트 추출"""
         try:
-            return file_content.decode('utf-8')
+            text = file_content.decode('utf-8')
+            # 텍스트 정제
+            text = DocumentProcessor.clean_text(text)
+            return text
         except Exception as e:
             print(f"TXT 텍스트 추출 실패: {e}")
             return ""

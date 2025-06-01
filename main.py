@@ -117,9 +117,28 @@ async def upload_document(
         # 문서 저장 시도
         try:
             print("문서 저장 시작...")
+            # PostgreSQL 호환성을 위한 강력한 텍스트 정제
+            from text_cleaner import TextCleaner
+            clean_text = TextCleaner.clean_for_postgresql(text_content)
+            
+            # UTF-8 유효성 검증
+            if not TextCleaner.validate_utf8(clean_text):
+                print("UTF-8 인코딩 오류 감지, 강제 정제 중...")
+                clean_text = clean_text.encode('utf-8', errors='ignore').decode('utf-8')
+            
+            # 안전한 텍스트 길이 제한
+            clean_text = TextCleaner.safe_truncate(clean_text, 1000000)  # 1MB 제한
+            if len(clean_text) != len(text_content):
+                print(f"텍스트 정제 및 길이 조정: {len(text_content)} -> {len(clean_text)}")
+            
+            # 최종 검증: NULL 바이트가 완전히 제거되었는지 확인
+            if '\x00' in clean_text:
+                print("경고: NULL 바이트가 여전히 존재함, 강제 제거 중...")
+                clean_text = clean_text.replace('\x00', '')
+            
             document = Document(
                 filename=file.filename,
-                content=text_content
+                content=clean_text
             )
             db.add(document)
             await db.flush()  # ID 생성을 위해
@@ -133,7 +152,7 @@ async def upload_document(
         
         # 텍스트 청킹
         try:
-            chunks = DocumentProcessor.chunk_text(text_content)
+            chunks = DocumentProcessor.chunk_text(clean_text)
             print(f"텍스트 청킹 완료: {len(chunks)}개 청크 생성")
         except Exception as chunk_err:
             print(f"텍스트 청킹 오류: {str(chunk_err)}")
@@ -148,10 +167,16 @@ async def upload_document(
             for i, chunk_text in enumerate(chunks):
                 print(f"청크 {i+1}/{len(chunks)} 처리 중...")
                 
+                # 청크 텍스트도 PostgreSQL 호환성을 위해 정제
+                clean_chunk_text = TextCleaner.clean_for_postgresql(chunk_text)
+                if '\x00' in clean_chunk_text:
+                    print(f"청크 {i+1}에서 NULL 바이트 제거 중...")
+                    clean_chunk_text = clean_chunk_text.replace('\x00', '')
+                
                 # 데이터베이스에 청크 저장
                 chunk = DocumentChunk(
                     document_id=document.id,
-                    chunk_text=chunk_text,
+                    chunk_text=clean_chunk_text,
                     chunk_index=i
                 )
                 db.add(chunk)
@@ -160,7 +185,7 @@ async def upload_document(
                 # FAISS 인덱스에 추가
                 print(f"청크 {i+1} 임베딩 생성 중...")
                 try:
-                    embedding = embedding_service.add_to_index(chunk.id, chunk_text)
+                    embedding = embedding_service.add_to_index(chunk.id, clean_chunk_text)
                     
                     # 임베딩을 데이터베이스에 저장
                     if embedding:
