@@ -459,7 +459,7 @@ async def chat_with_documents(
         
         async def generate_stream():
             try:
-                async for chunk in stream:
+                for chunk in stream:
                     if chunk.choices[0].delta.content:
                         content = chunk.choices[0].delta.content
                         yield "data: " + json.dumps({
