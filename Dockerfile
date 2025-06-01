@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 필수 파일만 복사 (최소한의 파일만 포함)
 COPY main.py chat_service.py document_processor.py lightweight_embedding.py database.py ./
-COPY requirements-minimal.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 COPY templates templates/
 COPY start.sh ./
 RUN chmod +x start.sh
@@ -32,7 +32,7 @@ RUN chmod +x start.sh
 RUN mkdir -p static
 
 # 필수 패키지만 설치 (최소한의 의존성)
-RUN pip install --no-cache-dir fastapi uvicorn python-multipart jinja2 python-dotenv sqlalchemy asyncpg aiosqlite openai numpy PyPDF2 python-docx aiofiles && \
+RUN pip install --no-cache-dir -r requirements.txt && \
     pip cache purge
 
 # 포트 노출
