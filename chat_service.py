@@ -1,14 +1,10 @@
 import os
 import openai
-from dotenv import load_dotenv
-
-load_dotenv()
 
 class ChatService:
     def __init__(self):
-        self.client = openai.AsyncOpenAI(
-            api_key=os.getenv("OPENAI_API_KEY")
-        )
+        openai.api_key = os.environ.get("OPENAI_API_KEY")
+        self.client = openai
         # CloudType 환경 감지
         self.is_cloudtype = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
     

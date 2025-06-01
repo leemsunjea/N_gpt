@@ -3,9 +3,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, Integer, String, Text, DateTime, Float
 from datetime import datetime
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # CloudType 환경 감지
 IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
