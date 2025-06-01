@@ -2,14 +2,38 @@ import os
 import PyPDF2
 import docx
 import re
+import unicodedata
 from io import BytesIO
-from text_cleaner import TextCleaner
 
 class DocumentProcessor:
     @staticmethod
     def clean_text(text):
         """텍스트에서 문제가 될 수 있는 문자들을 정제"""
-        return TextCleaner.clean_for_postgresql(text)
+        if not text:
+            return ""
+        
+        # 1. null 바이트 제거
+        text = text.replace('\x00', '')
+        
+        # 2. 대체 문자 제거
+        text = text.replace('\ufffd', '')
+        
+        # 3. 기타 제어 문자 제거 (탭, 개행, 캐리지 리턴은 유지)
+        text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]', '', text)
+        
+        # 4. Unicode 정규화 (NFD -> NFC)
+        text = unicodedata.normalize('NFC', text)
+        
+        # 5. 비인쇄 가능한 Unicode 문자 제거
+        text = ''.join(char for char in text if unicodedata.category(char)[0] != 'C' or char in '\t\n\r')
+        
+        # 6. 연속된 공백 정리
+        text = re.sub(r'\s+', ' ', text)
+        
+        # 7. 앞뒤 공백 제거
+        text = text.strip()
+        
+        return text
     
     @staticmethod
     def extract_text_from_pdf(file_content):
