@@ -16,53 +16,55 @@ document.addEventListener('DOMContentLoaded', function() {
     if (chatForm) {
         chatForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const query = chatInput.value.trim();
             if (!query) return;
-            
+
+            // 참고 문서 출처 콘솔에 출력
+            try {
+                const searchRes = await fetch('/search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams({ query })
+                });
+                const searchData = await searchRes.json();
+                console.log('참고 문서 출처:', searchData.results);
+            } catch (err) {
+                console.error('출처 조회 실패:', err);
+            }
+
             // 사용자 메시지 표시
             appendMessage('user', query);
             chatInput.value = '';
-            
+
+            // 봇 메시지 컨테이너 생성
+            const botMessageElement = document.createElement('div');
+            botMessageElement.className = 'message bot-message';
+            messagesContainer.appendChild(botMessageElement);
+
             try {
                 // 스트리밍 응답 처리
                 const response = await fetch('/chat', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({ query: query })
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams({ query })
                 });
-                
-                // 봇 메시지 컨테이너 생성
-                const botMessageElement = document.createElement('div');
-                botMessageElement.className = 'message bot-message';
-                messagesContainer.appendChild(botMessageElement);
-                
-                // 스트리밍 응답 처리
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
-                
                 let botResponse = '';
-                
+
                 while (true) {
                     const { done, value } = await reader.read();
-                    
-                    if (done) {
-                        break;
-                    }
-                    
+                    if (done) break;
                     const text = decoder.decode(value);
                     const lines = text.split('\n\n');
-                    
                     for (const line of lines) {
                         if (line.startsWith('data: ')) {
                             try {
                                 const data = JSON.parse(line.substring(6));
-                                
                                 if (!data.done) {
                                     botResponse += data.content;
-                                    botMessageElement.textContent = botResponse;
+                                    // Markdown 렌더링
+                                    botMessageElement.innerHTML = `<div class="markdown-content">${marked.parse(botResponse)}</div>`;
                                 }
                             } catch (e) {
                                 console.error('JSON 파싱 에러:', e);
@@ -70,13 +72,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }
-                
-                // 스크롤을 가장 아래로 이동
+                // 스크롤 아래로
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
             } catch (error) {
                 console.error('오류:', error);
-                appendMessage('bot', '죄송합니다. 요청을 처리하는 중 오류가 발생했습니다.');
+                appendMessage('bot', '❌ 오류가 발생했습니다: ' + error.message);
+            } finally {
+                sendButton.disabled = false;
             }
         });
     }
