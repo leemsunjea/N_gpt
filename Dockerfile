@@ -6,6 +6,10 @@ WORKDIR /app
 # 시스템 패키지 업데이트 및 필요한 패키지 설치
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
+    build-essential \
+    swig \
+    cmake \
+    libopenblas-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Builder stage: copy requirements and install dependencies
