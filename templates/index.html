@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,24 +11,35 @@
         .chat-message {
             animation: slideIn 0.3s ease-out;
         }
+
         @keyframes slideIn {
             from {
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
+
         .typing-indicator {
             animation: pulse 1.5s infinite;
         }
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
-        
+
         /* 마크다운 스타일링 */
         .markdown-content h1,
         .markdown-content h2,
@@ -35,29 +47,39 @@
             font-weight: bold;
             margin: 0.5em 0;
         }
-        .markdown-content h1 { font-size: 1.25em; }
-        .markdown-content h2 { font-size: 1.125em; }
-        .markdown-content h3 { font-size: 1.0625em; }
-        
+
+        .markdown-content h1 {
+            font-size: 1.25em;
+        }
+
+        .markdown-content h2 {
+            font-size: 1.125em;
+        }
+
+        .markdown-content h3 {
+            font-size: 1.0625em;
+        }
+
         .markdown-content p {
             margin: 0.5em 0;
             line-height: 1.5;
         }
-        
+
         .markdown-content ul,
         .markdown-content ol {
             margin: 0.5em 0;
             padding-left: 1.5em;
             list-style-position: inside;
         }
+
         .markdown-content ol {
             list-style-type: decimal;
         }
-        
+
         .markdown-content li {
             margin: 0.25em 0;
         }
-        
+
         .markdown-content code {
             background-color: #f1f5f9;
             padding: 0.125em 0.25em;
@@ -65,7 +87,7 @@
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             font-size: 0.875em;
         }
-        
+
         .markdown-content pre {
             background-color: #f1f5f9;
             padding: 0.75em;
@@ -73,7 +95,7 @@
             overflow-x: auto;
             margin: 0.5em 0;
         }
-        
+
         .markdown-content blockquote {
             border-left: 4px solid #e2e8f0;
             padding-left: 1em;
@@ -81,20 +103,20 @@
             font-style: italic;
             color: #64748b;
         }
-        
+
         .markdown-content strong {
             font-weight: bold;
         }
-        
+
         .markdown-content em {
             font-style: italic;
         }
-        
+
         .markdown-content a {
             color: #3b82f6;
             text-decoration: underline;
         }
-        
+
         .markdown-content hr {
             border: none;
             border-top: 1px solid #e2e8f0;
@@ -102,6 +124,7 @@
         }
     </style>
 </head>
+
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <!-- 헤더 -->
@@ -112,31 +135,37 @@
 
         <!-- 메인 컨테이너 -->
         <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             <!-- 왼쪽: 문서 업로드 & 관리 -->
             <div class="lg:col-span-1 space-y-6">
                 <!-- 문서 업로드 -->
                 <div class="bg-white rounded-lg shadow-md p-6">
                     <h2 class="text-xl font-semibold mb-4 text-gray-800">📁 문서 업로드</h2>
                     <form id="uploadForm" class="space-y-4">
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                        <div
+                            class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                             <input type="file" id="fileInput" accept=".pdf,.docx,.txt" class="hidden">
                             <label for="fileInput" class="cursor-pointer">
                                 <div class="text-gray-500">
-                                    <svg class="mx-auto h-12 w-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    <svg class="mx-auto h-12 w-12 mb-3" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                     </svg>
                                     <p class="text-sm">클릭하여 파일 선택</p>
                                     <p class="text-xs text-gray-400">PDF, DOCX, TXT 지원</p>
                                 </div>
                             </label>
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50" disabled>
+                        <button type="submit"
+                            class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                            disabled>
                             업로드
                         </button>
                     </form>
                     <div id="uploadStatus" class="mt-4 text-sm"></div>
                 </div>
+
 
                 <!-- 문서 목록 -->
                 <div class="bg-white rounded-lg shadow-md p-6">
@@ -144,11 +173,53 @@
                     <div id="documentList" class="space-y-2">
                         <p class="text-gray-500 text-sm">업로드된 문서가 없습니다.</p>
                     </div>
-                    <button id="refreshDocs" class="mt-4 w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
+                    <button id="refreshDocs"
+                        class="mt-4 w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
                         새로고침
                     </button>
                 </div>
             </div>
+            <!-- 사용자 정보 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">👤 사용자 정보</h2>
+                <div id="userInfo" class="space-y-2 text-sm text-gray-600">
+                    <p id="userId">사용자 ID: 로딩 중...</p>
+                    <p id="documentCount">문서 수: -</p>
+                    <p id="chunkCount">청크 수: -</p>
+                    <p id="lastActive">마지막 활동: -</p>
+                </div>
+                <button id="refreshStats"
+                    class="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
+                    통계 새로고침
+                </button>
+            </div>
+
+            <!-- 관리자 패널 -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4 text-yellow-800">🔧 관리자 패널</h2>
+                <div class="space-y-3">
+                    <input type="password" id="adminKey" placeholder="관리자 키 입력"
+                        class="w-full px-3 py-2 border border-yellow-300 rounded-lg text-sm">
+                    <button id="showSystemStats"
+                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                        시스템 통계 조회
+                    </button>
+                    <button id="showAllUsers"
+                        class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-sm">
+                        모든 사용자 조회
+                    </button>
+                    <button id="cleanupSessions"
+                        class="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors text-sm">
+                        세션 정리 (7일)
+                    </button>
+                    <button id="cleanupInactive"
+                        class="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-sm">
+                        비활성 사용자 정리 (30일)
+                    </button>
+                </div>
+                <div id="adminResult" class="mt-4 text-sm"></div>
+            </div>
+
 
             <!-- 오른쪽: 채팅 영역 -->
             <div class="lg:col-span-2">
@@ -169,10 +240,10 @@
                     <!-- 채팅 입력 -->
                     <div class="p-4 border-t border-gray-200">
                         <form id="chatForm" class="flex space-x-2">
-                            <input type="text" id="chatInput" placeholder="문서에 대해 질문하세요..." 
-                                   class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <button type="submit" id="sendButton" 
-                                    class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+                            <input type="text" id="chatInput" placeholder="문서에 대해 질문하세요..."
+                                class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button type="submit" id="sendButton"
+                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
                                 전송
                             </button>
                         </form>
@@ -193,12 +264,25 @@
         const chatInput = document.getElementById('chatInput');
         const chatMessages = document.getElementById('chatMessages');
         const sendButton = document.getElementById('sendButton');
+        const refreshStats = document.getElementById('refreshStats');
+        const userIdElement = document.getElementById('userId');
+        const documentCountElement = document.getElementById('documentCount');
+        const chunkCountElement = document.getElementById('chunkCount');
+        const lastActiveElement = document.getElementById('lastActive');
+
+        // 관리자 패널 요소들
+        const adminKey = document.getElementById('adminKey');
+        const showSystemStats = document.getElementById('showSystemStats');
+        const showAllUsers = document.getElementById('showAllUsers');
+        const cleanupSessions = document.getElementById('cleanupSessions');
+        const cleanupInactive = document.getElementById('cleanupInactive');
+        const adminResult = document.getElementById('adminResult');
 
         // 파일 선택 이벤트
-        fileInput.addEventListener('change', function() {
+        fileInput.addEventListener('change', function () {
             const file = this.files[0];
             const submitButton = uploadForm.querySelector('button[type="submit"]');
-            
+
             if (file) {
                 submitButton.disabled = false;
                 submitButton.textContent = `${file.name} 업로드`;
@@ -209,9 +293,9 @@
         });
 
         // 파일 업로드
-        uploadForm.addEventListener('submit', async function(e) {
+        uploadForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const file = fileInput.files[0];
             if (!file) return;
 
@@ -219,7 +303,7 @@
             formData.append('file', file);
 
             uploadStatus.innerHTML = '<div class="text-blue-600">업로드 중...</div>';
-            
+
             try {
                 const response = await fetch('/upload', {
                     method: 'POST',
@@ -227,13 +311,14 @@
                 });
 
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     uploadStatus.innerHTML = `<div class="text-green-600">✅ ${result.message}</div>`;
                     fileInput.value = '';
                     uploadForm.querySelector('button[type="submit"]').disabled = true;
                     uploadForm.querySelector('button[type="submit"]').textContent = '업로드';
                     loadDocuments();
+                    loadUserStats(); // 문서 업로드 후 통계 업데이트
                 } else {
                     uploadStatus.innerHTML = `<div class="text-red-600">❌ ${result.detail}</div>`;
                 }
@@ -247,7 +332,7 @@
             try {
                 const response = await fetch('/documents');
                 const result = await response.json();
-                
+
                 if (result.documents && result.documents.length > 0) {
                     documentList.innerHTML = result.documents.map(doc => `
                         <div class="p-2 bg-gray-50 rounded border">
@@ -266,11 +351,151 @@
         // 문서 목록 새로고침
         refreshDocs.addEventListener('click', loadDocuments);
 
+        // 사용자 통계 로드
+        async function loadUserStats() {
+            try {
+                const response = await fetch('/user/stats');
+                const result = await response.json();
+
+                if (response.ok) {
+                    userIdElement.textContent = `사용자 ID: ${result.user_id}`;
+                    documentCountElement.textContent = `문서 수: ${result.document_count}`;
+                    chunkCountElement.textContent = `청크 수: ${result.chunk_count}`;
+                    lastActiveElement.textContent = `마지막 활동: ${new Date(result.last_active).toLocaleString()}`;
+                } else {
+                    console.error('사용자 통계 로드 실패:', result);
+                    userIdElement.textContent = '사용자 ID: 로드 실패';
+                }
+            } catch (error) {
+                console.error('사용자 통계 로드 오류:', error);
+                userIdElement.textContent = '사용자 ID: 로드 오류';
+            }
+        }
+
+        // 사용자 통계 새로고침 버튼
+        refreshStats.addEventListener('click', loadUserStats);
+
+        // 관리자 기능들
+        function displayAdminResult(data, isError = false) {
+            const className = isError ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50';
+            adminResult.innerHTML = `<div class="${className} p-3 rounded border text-xs"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+        }
+
+        // 시스템 통계 조회
+        showSystemStats.addEventListener('click', async function () {
+            const key = adminKey.value.trim();
+            if (!key) {
+                displayAdminResult({ error: '관리자 키를 입력하세요' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/system_stats?admin_key=${encodeURIComponent(key)}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayAdminResult(result);
+                } else {
+                    displayAdminResult(result, true);
+                }
+            } catch (error) {
+                displayAdminResult({ error: `요청 실패: ${error.message}` }, true);
+            }
+        });
+
+        // 모든 사용자 조회
+        showAllUsers.addEventListener('click', async function () {
+            const key = adminKey.value.trim();
+            if (!key) {
+                displayAdminResult({ error: '관리자 키를 입력하세요' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/all_users?admin_key=${encodeURIComponent(key)}`);
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayAdminResult(result);
+                } else {
+                    displayAdminResult(result, true);
+                }
+            } catch (error) {
+                displayAdminResult({ error: `요청 실패: ${error.message}` }, true);
+            }
+        });
+
+        // 세션 정리
+        cleanupSessions.addEventListener('click', async function () {
+            const key = adminKey.value.trim();
+            if (!key) {
+                displayAdminResult({ error: '관리자 키를 입력하세요' }, true);
+                return;
+            }
+
+            if (!confirm('7일 이상 비활성 세션을 정리하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('admin_key', key);
+                formData.append('days_threshold', '7');
+
+                const response = await fetch('/admin/cleanup_sessions', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayAdminResult(result);
+                } else {
+                    displayAdminResult(result, true);
+                }
+            } catch (error) {
+                displayAdminResult({ error: `요청 실패: ${error.message}` }, true);
+            }
+        });
+
+        // 비활성 사용자 정리
+        cleanupInactive.addEventListener('click', async function () {
+            const key = adminKey.value.trim();
+            if (!key) {
+                displayAdminResult({ error: '관리자 키를 입력하세요' }, true);
+                return;
+            }
+
+            if (!confirm('30일 이상 비활성 사용자 데이터를 정리하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('admin_key', key);
+                formData.append('days_threshold', '30');
+
+                const response = await fetch('/admin/cleanup_inactive', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayAdminResult(result);
+                } else {
+                    displayAdminResult(result, true);
+                }
+            } catch (error) {
+                displayAdminResult({ error: `요청 실패: ${error.message}` }, true);
+            }
+        });
+
         // 채팅 메시지 추가
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${isUser ? 'ml-8' : 'mr-8'}`;
-            
+
             messageDiv.innerHTML = `
                 <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
                     <div class="${isUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'} rounded-lg p-3 max-w-xl">
@@ -278,7 +503,7 @@
                     </div>
                 </div>
             `;
-            
+
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
@@ -307,9 +532,9 @@
         }
 
         // 채팅 폼 제출
-        chatForm.addEventListener('submit', async function(e) {
+        chatForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const query = chatInput.value.trim();
             if (!query) return;
 
@@ -317,7 +542,7 @@
             addMessage(query, true);
             chatInput.value = '';
             sendButton.disabled = true;
-            
+
             // 타이핑 인디케이터 표시
             showTypingIndicator();
 
@@ -340,7 +565,7 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let aiResponse = '';
-                
+
                 // AI 응답 컨테이너 생성
                 const responseDiv = document.createElement('div');
                 responseDiv.className = 'chat-message mr-8';
@@ -360,7 +585,7 @@
                     if (done) break;
 
                     buffer += decoder.decode(value, { stream: true });
-                    
+
                     // 완전한 라인들을 처리
                     const lines = buffer.split('\n\n');
                     buffer = lines.pop() || ''; // 마지막 불완전한 라인은 버퍼에 유지
@@ -371,14 +596,14 @@
                                 const jsonStr = line.trim().slice(6); // 'data: ' 제거
                                 if (jsonStr.trim()) {
                                     const data = JSON.parse(jsonStr);
-                                    
+
                                     if (data.content) {
                                         aiResponse += data.content;
                                         // 마크다운 렌더링 및 줄바꿈 처리
                                         contentDiv.innerHTML = marked.parse(aiResponse);
                                         chatMessages.scrollTop = chatMessages.scrollHeight;
                                     }
-                                    
+
                                     if (data.done) {
                                         // 최종 렌더링
                                         contentDiv.innerHTML = marked.parse(aiResponse);
@@ -408,6 +633,9 @@
 
         // 초기 문서 목록 로드
         loadDocuments();
+        // 초기 사용자 통계 로드
+        loadUserStats();
     </script>
 </body>
+
 </html>

@@ -59,20 +59,29 @@ async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit
 # Base 클래스
 Base = declarative_base()
 
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(String, primary_key=True, index=True)  # UUID 문자열
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_active = Column(DateTime, default=datetime.utcnow)
+
 class Document(Base):
     __tablename__ = "documents"
     
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=False, index=True)  # 사용자 ID 추가 (인덱싱)
     filename = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     embedding = Column(Text, nullable=True)  # JSON 형태로 저장
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)  # 정렬용 인덱스 추가
 
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
     
     id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, nullable=False)
+    user_id = Column(String, nullable=False, index=True)  # 사용자 ID 추가 (인덱싱)
+    document_id = Column(Integer, nullable=False, index=True)  # 조인용 인덱스 추가
     chunk_text = Column(Text, nullable=False)
     embedding = Column(Text, nullable=True)  # JSON 형태로 저장
     chunk_index = Column(Integer, nullable=False)

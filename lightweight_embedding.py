@@ -18,12 +18,15 @@ class DummyEmbedder:
         # 384차원의 랜덤 임베딩 생성
         return np.random.rand(len(texts), 384).astype('float32')
 
-# 더 가벼운 임베딩 서비스
-class LightweightEmbeddingService:
-    def __init__(self):
-        # 인덱스 파일 경로
-        self.index_path = "faiss_index.bin"
-        self.chunk_ids_path = "chunk_ids.json"
+# 사용자별 임베딩 서비스
+class UserEmbeddingService:
+    """사용자별로 격리된 임베딩 서비스"""
+    
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        # 사용자별 인덱스 파일 경로
+        self.index_path = f"faiss_index_{user_id}.bin"
+        self.chunk_ids_path = f"chunk_ids_{user_id}.json"
         self.dimension = 384  # 임베딩 차원
         
         # 필요한 모듈들은 메서드 내에서 필요할 때만 로드
@@ -31,9 +34,6 @@ class LightweightEmbeddingService:
         self._faiss = None
         self.index = None
         self.chunk_ids = []
-        
-        # 환경 변수 확인 - CloudType 배포 여부
-        self.is_cloudtype = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
         
         # 환경 변수 확인 - CloudType 배포 여부
         self.is_cloudtype = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
@@ -87,7 +87,7 @@ class LightweightEmbeddingService:
             self.chunk_ids = []
     
     def save_index(self):
-        """FAISS 인덱스 저장"""
+        """FAISS 인덱스 저장 (파일 락 적용)"""
         if self.index is None:
             print("저장할 인덱스가 없습니다.")
             return
@@ -95,12 +95,46 @@ class LightweightEmbeddingService:
         self._load_faiss()  # FAISS 모듈 로드
         
         try:
-            self._faiss.write_index(self.index, self.index_path)
-            with open(self.chunk_ids_path, 'w') as f:
+            import fcntl
+            import tempfile
+            import os
+            
+            # 임시 파일로 저장 후 원자적 이동 (동시성 문제 해결)
+            temp_index_path = self.index_path + ".tmp"
+            temp_chunk_ids_path = self.chunk_ids_path + ".tmp"
+            
+            # FAISS 인덱스 저장
+            self._faiss.write_index(self.index, temp_index_path)
+            
+            # 청크 ID 저장
+            with open(temp_chunk_ids_path, 'w') as f:
                 json.dump(self.chunk_ids, f)
-            print("FAISS 인덱스 저장 완료")
+            
+            # 원자적으로 파일 이동 (다른 프로세스에서 읽는 도중 덮어쓰기 방지)
+            try:
+                os.rename(temp_index_path, self.index_path)
+                os.rename(temp_chunk_ids_path, self.chunk_ids_path)
+                print(f"사용자 {self.user_id}: FAISS 인덱스 저장 완료")
+            except OSError as rename_err:
+                print(f"사용자 {self.user_id}: 파일 이동 실패: {rename_err}")
+                # 임시 파일 정리
+                if os.path.exists(temp_index_path):
+                    os.remove(temp_index_path)
+                if os.path.exists(temp_chunk_ids_path):
+                    os.remove(temp_chunk_ids_path)
+                raise
+                
+        except ImportError:
+            # fcntl이 없는 환경 (Windows 등)에서는 기본 저장 방식 사용
+            try:
+                self._faiss.write_index(self.index, self.index_path)
+                with open(self.chunk_ids_path, 'w') as f:
+                    json.dump(self.chunk_ids, f)
+                print(f"사용자 {self.user_id}: FAISS 인덱스 저장 완료 (기본 방식)")
+            except Exception as basic_err:
+                print(f"사용자 {self.user_id}: 기본 저장 방식 실패: {basic_err}")
         except Exception as e:
-            print(f"인덱스 저장 실패: {e}")
+            print(f"사용자 {self.user_id}: 인덱스 저장 실패: {e}")
     
     def create_embedding(self, text):
         """텍스트를 임베딩으로 변환"""
@@ -182,13 +216,13 @@ class LightweightEmbeddingService:
             return None
     
     async def search_similar(self, query, k=5):
-        """유사한 문서 청크 검색"""
+        """유사한 문서 청크 검색 (사용자별 격리)"""
         try:
             self._load_faiss()  # FAISS 모듈 로드
             
             # FAISS 모듈을 로드할 수 없거나 인덱스가 비어있는 경우
             if self._faiss is None or self.index is None or self.index.ntotal == 0:
-                print("FAISS 인덱스가 없거나 비어있음, 대체 검색 로직 사용")
+                print(f"사용자 {self.user_id}: FAISS 인덱스가 없거나 비어있음, 대체 검색 로직 사용")
                 # 대체 검색 로직 (간단한 키워드 매칭)
                 return await self._fallback_search(query, k)
             
@@ -196,7 +230,7 @@ class LightweightEmbeddingService:
             try:
                 query_embedding = self.create_embedding(query)
             except Exception as embed_err:
-                print(f"쿼리 임베딩 생성 실패: {embed_err}")
+                print(f"사용자 {self.user_id}: 쿼리 임베딩 생성 실패: {embed_err}")
                 return await self._fallback_search(query, k)
             
             # FAISS에서 검색
@@ -206,10 +240,10 @@ class LightweightEmbeddingService:
                     min(k, self.index.ntotal)
                 )
             except Exception as search_err:
-                print(f"FAISS 검색 오류: {search_err}")
+                print(f"사용자 {self.user_id}: FAISS 검색 오류: {search_err}")
                 return await self._fallback_search(query, k)
             
-            # 결과 처리
+            # 결과 처리 (사용자별 필터링)
             results = []
             try:
                 async with async_session() as session:
@@ -217,9 +251,12 @@ class LightweightEmbeddingService:
                         if idx >= 0 and idx < len(self.chunk_ids):
                             chunk_id = self.chunk_ids[idx]
                             
-                            # 데이터베이스에서 청크 정보 조회
+                            # 데이터베이스에서 청크 정보 조회 (사용자 ID로 필터링)
                             try:
-                                stmt = select(DocumentChunk).where(DocumentChunk.id == chunk_id)
+                                stmt = select(DocumentChunk).where(
+                                    DocumentChunk.id == chunk_id,
+                                    DocumentChunk.user_id == self.user_id  # 사용자별 필터링
+                                )
                                 result = await session.execute(stmt)
                                 chunk = result.scalar_one_or_none()
                                 
@@ -228,25 +265,26 @@ class LightweightEmbeddingService:
                                         'chunk_id': chunk_id,
                                         'text': chunk.chunk_text,
                                         'score': float(score),
-                                        'document_id': chunk.document_id
+                                        'document_id': chunk.document_id,
+                                        'user_id': chunk.user_id
                                     })
                             except Exception as db_err:
-                                print(f"청크 ID {chunk_id} 조회 실패: {db_err}")
+                                print(f"사용자 {self.user_id}: 청크 ID {chunk_id} 조회 실패: {db_err}")
                 
                 return results
             except Exception as result_err:
-                print(f"결과 처리 오류: {result_err}")
+                print(f"사용자 {self.user_id}: 결과 처리 오류: {result_err}")
                 return []
                 
         except Exception as e:
-            print(f"검색 실패: {e}")
+            print(f"사용자 {self.user_id}: 검색 실패: {e}")
             import traceback
             print(traceback.format_exc())
             return []
     
     async def _fallback_search(self, query, k=5):
-        """FAISS가 없을 때 대체 검색 로직"""
-        print("대체 검색 로직 사용 중...")
+        """FAISS가 없을 때 대체 검색 로직 (사용자별 격리)"""
+        print(f"사용자 {self.user_id}: 대체 검색 로직 사용 중...")
         results = []
         
         try:
@@ -255,22 +293,25 @@ class LightweightEmbeddingService:
             IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
             
             if IS_CLOUDTYPE:
-                print("CloudType 환경: 데이터베이스 연결 건너뜀, 더미 결과 반환")
+                print(f"사용자 {self.user_id}: CloudType 환경: 데이터베이스 연결 건너뜀, 더미 결과 반환")
                 # CloudType 환경에서는 더미 응답 반환
                 return [{
                     'chunk_id': 1,
-                    'text': f"CloudType 환경에서 '{query}'에 대한 기본 응답입니다. 현재 데이터베이스 연결에 문제가 있어 저장된 문서를 검색할 수 없습니다.",
+                    'text': f"사용자 {self.user_id}의 CloudType 환경에서 '{query}'에 대한 기본 응답입니다. 현재 데이터베이스 연결에 문제가 있어 저장된 문서를 검색할 수 없습니다.",
                     'score': 0.5,
-                    'document_id': 1
+                    'document_id': 1,
+                    'user_id': self.user_id
                 }]
             
-            # 로컬 환경에서만 실제 데이터베이스 검색 수행
+            # 로컬 환경에서만 실제 데이터베이스 검색 수행 (사용자별 필터링)
             async with async_session() as session:
-                # 단순 키워드 매칭으로 검색
+                # 단순 키워드 매칭으로 검색 (사용자별 필터링)
                 query_terms = set(query.lower().split())
                 
-                # 최근 문서 청크 가져오기
-                stmt = select(DocumentChunk).order_by(DocumentChunk.id.desc()).limit(100)
+                # 해당 사용자의 최근 문서 청크 가져오기
+                stmt = select(DocumentChunk).where(
+                    DocumentChunk.user_id == self.user_id
+                ).order_by(DocumentChunk.id.desc()).limit(100)
                 result = await session.execute(stmt)
                 chunks = result.scalars().all()
                 
@@ -290,15 +331,112 @@ class LightweightEmbeddingService:
                         'chunk_id': chunk.id,
                         'text': chunk.chunk_text,
                         'score': score,
-                        'document_id': chunk.document_id
+                        'document_id': chunk.document_id,
+                        'user_id': chunk.user_id
                     })
                     
             return results
         except Exception as e:
-            print(f"대체 검색 실패: {e}")
+            print(f"사용자 {self.user_id}: 대체 검색 실패: {e}")
             import traceback
             print(traceback.format_exc())
             return []
 
-# 전역 임베딩 서비스 인스턴스
-embedding_service = LightweightEmbeddingService()
+# 사용자별 임베딩 서비스 팩토리
+class EmbeddingServiceManager:
+    """사용자별 임베딩 서비스 관리자"""
+    
+    def __init__(self):
+        self._services = {}  # user_id -> UserEmbeddingService
+        self._max_services = 50  # 메모리 절약을 위한 최대 서비스 수 (100에서 50으로 감소)
+        self._access_count = {}  # user_id -> access count (LRU 구현용)
+        self._lock = None  # 동시성 보호용 락 (필요시 생성)
+    
+    def _get_lock(self):
+        """필요시 락 생성 (지연 초기화)"""
+        if self._lock is None:
+            try:
+                import asyncio
+                self._lock = asyncio.Lock()
+            except Exception:
+                # asyncio가 없는 환경에서는 None으로 유지
+                pass
+        return self._lock
+    
+    async def get_service(self, user_id: str) -> UserEmbeddingService:
+        """사용자별 임베딩 서비스 인스턴스 반환 (동시성 보호)"""
+        lock = self._get_lock()
+        
+        if lock:
+            async with lock:
+                return self._get_service_sync(user_id)
+        else:
+            return self._get_service_sync(user_id)
+    
+    def _get_service_sync(self, user_id: str) -> UserEmbeddingService:
+        """동기적 서비스 획득 (락 내부에서 호출)"""
+        if user_id not in self._services:
+            # 메모리 관리: 최대 서비스 수 초과 시 가장 적게 사용된 것 제거
+            if len(self._services) >= self._max_services:
+                # LRU (Least Recently Used) 방식으로 제거
+                if self._access_count:
+                    lru_user = min(self._access_count.items(), key=lambda x: x[1])[0]
+                else:
+                    # access_count가 비어있으면 첫 번째 제거
+                    lru_user = next(iter(self._services))
+                
+                old_service = self._services.pop(lru_user)
+                self._access_count.pop(lru_user, None)
+                
+                # 인덱스 저장
+                try:
+                    old_service.save_index()
+                    print(f"사용자 {lru_user} 서비스 정리 및 인덱스 저장 완료")
+                except Exception as e:
+                    print(f"사용자 {lru_user} 인덱스 저장 실패: {e}")
+            
+            # 새 서비스 생성
+            self._services[user_id] = UserEmbeddingService(user_id)
+            self._access_count[user_id] = 0
+        
+        # 접근 횟수 증가
+        self._access_count[user_id] = self._access_count.get(user_id, 0) + 1
+        return self._services[user_id]
+    
+    async def cleanup_service(self, user_id: str):
+        """특정 사용자의 서비스 정리 (동시성 보호)"""
+        lock = self._get_lock()
+        
+        if lock:
+            async with lock:
+                self._cleanup_service_sync(user_id)
+        else:
+            self._cleanup_service_sync(user_id)
+    
+    def _cleanup_service_sync(self, user_id: str):
+        """동기적 서비스 정리 (락 내부에서 호출)"""
+        if user_id in self._services:
+            service = self._services.pop(user_id)
+            self._access_count.pop(user_id, None)
+            try:
+                service.save_index()
+                print(f"사용자 {user_id} 서비스 정리 완료")
+            except Exception as e:
+                print(f"사용자 {user_id} 서비스 정리 중 오류: {e}")
+    
+    def get_stats(self):
+        """서비스 매니저 통계 반환"""
+        return {
+            "active_services": len(self._services),
+            "max_services": self._max_services,
+            "users": list(self._services.keys()),
+            "access_counts": dict(self._access_count)
+        }
+
+# 전역 임베딩 서비스 매니저
+embedding_manager = EmbeddingServiceManager()
+
+# 하위 호환성을 위한 래퍼 함수들
+async def get_embedding_service(user_id: str = "default") -> UserEmbeddingService:
+    """사용자별 임베딩 서비스 반환"""
+    return await embedding_manager.get_service(user_id)
