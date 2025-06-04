@@ -9,12 +9,12 @@
 import asyncio
 import os
 import glob
+import json
 from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, func, text
 from database import get_db_session, Document, DocumentChunk
-from user_session import UserSession
-import json
+from user_session import UserSessionManager
 
 class UserDataCleaner:
     def __init__(self):

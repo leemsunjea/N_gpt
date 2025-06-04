@@ -24,19 +24,29 @@ class UserEmbeddingService:
     
     def __init__(self, user_id: str):
         self.user_id = user_id
-        # 사용자별 인덱스 파일 경로
-        self.index_path = f"faiss_index_{user_id}.bin"
-        self.chunk_ids_path = f"chunk_ids_{user_id}.json"
         self.dimension = 384  # 임베딩 차원
+        
+        # CloudType 환경 감지 및 파일 경로 설정
+        self.is_cloudtype = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
+        
+        if self.is_cloudtype:
+            # CloudType 환경: 임시 디렉토리 사용
+            import tempfile
+            temp_dir = tempfile.gettempdir()
+            self.index_path = os.path.join(temp_dir, f"faiss_{user_id}.index")
+            self.chunk_ids_path = os.path.join(temp_dir, f"faiss_{user_id}_chunks.json")
+        else:
+            # 로컬 환경: faiss_indexes 디렉토리 사용
+            faiss_dir = "faiss_indexes"
+            os.makedirs(faiss_dir, exist_ok=True)
+            self.index_path = os.path.join(faiss_dir, f"{user_id}.index")
+            self.chunk_ids_path = os.path.join(faiss_dir, f"{user_id}_chunks.json")
         
         # 필요한 모듈들은 메서드 내에서 필요할 때만 로드
         self._model = None
         self._faiss = None
         self.index = None
         self.chunk_ids = []
-        
-        # 환경 변수 확인 - CloudType 배포 여부
-        self.is_cloudtype = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
         
     def _load_faiss(self):
         """필요할 때만 FAISS 모듈 로드"""
@@ -67,74 +77,113 @@ class UserEmbeddingService:
                 self._model = None
     
     def load_index(self):
-        """기존 FAISS 인덱스 로드"""
+        """기존 FAISS 인덱스 로드 (CloudType 환경 대응)"""
         self._load_faiss()  # FAISS 모듈 로드
         
         try:
-            if os.path.exists(self.index_path):
+            if os.path.exists(self.index_path) and self._faiss:
                 self.index = self._faiss.read_index(self.index_path)
-                print(f"FAISS 인덱스 로드됨: {self.index.ntotal}개 벡터")
+                print(f"사용자 {self.user_id}: FAISS 인덱스 로드됨: {self.index.ntotal}개 벡터")
             else:
-                self.index = self._faiss.IndexFlatIP(self.dimension)
+                if self._faiss:
+                    self.index = self._faiss.IndexFlatIP(self.dimension)
+                print(f"사용자 {self.user_id}: 새 FAISS 인덱스 생성")
             
             if os.path.exists(self.chunk_ids_path):
                 with open(self.chunk_ids_path, 'r') as f:
                     self.chunk_ids = json.load(f)
-                print(f"청크 ID 로드됨: {len(self.chunk_ids)}개")
+                print(f"사용자 {self.user_id}: 청크 ID 로드됨: {len(self.chunk_ids)}개")
+            else:
+                self.chunk_ids = []
+                
         except Exception as e:
-            print(f"인덱스 로드 실패: {e}")
-            self.index = self._faiss.IndexFlatIP(self.dimension)
+            print(f"사용자 {self.user_id}: 인덱스 로드 실패: {e}")
+            if self._faiss:
+                self.index = self._faiss.IndexFlatIP(self.dimension)
             self.chunk_ids = []
     
     def save_index(self):
-        """FAISS 인덱스 저장 (파일 락 적용)"""
+        """FAISS 인덱스 저장 (CloudType 환경 대응)"""
         if self.index is None:
             print("저장할 인덱스가 없습니다.")
             return
             
         self._load_faiss()  # FAISS 모듈 로드
         
-        try:
-            import fcntl
-            import tempfile
-            import os
-            
-            # 임시 파일로 저장 후 원자적 이동 (동시성 문제 해결)
-            temp_index_path = self.index_path + ".tmp"
-            temp_chunk_ids_path = self.chunk_ids_path + ".tmp"
-            
-            # FAISS 인덱스 저장
-            self._faiss.write_index(self.index, temp_index_path)
-            
-            # 청크 ID 저장
-            with open(temp_chunk_ids_path, 'w') as f:
-                json.dump(self.chunk_ids, f)
-            
-            # 원자적으로 파일 이동 (다른 프로세스에서 읽는 도중 덮어쓰기 방지)
+        # CloudType 환경 감지
+        import os
+        IS_CLOUDTYPE = os.environ.get('CLOUDTYPE_DEPLOYMENT', '0') == '1'
+        
+        if IS_CLOUDTYPE:
+            # CloudType 환경: 임시 디렉토리 사용
+            print(f"사용자 {self.user_id}: CloudType 환경 감지, 임시 디렉토리 사용")
             try:
-                os.rename(temp_index_path, self.index_path)
-                os.rename(temp_chunk_ids_path, self.chunk_ids_path)
-                print(f"사용자 {self.user_id}: FAISS 인덱스 저장 완료")
-            except OSError as rename_err:
-                print(f"사용자 {self.user_id}: 파일 이동 실패: {rename_err}")
-                # 임시 파일 정리
-                if os.path.exists(temp_index_path):
-                    os.remove(temp_index_path)
-                if os.path.exists(temp_chunk_ids_path):
-                    os.remove(temp_chunk_ids_path)
-                raise
+                import tempfile
+                # 임시 디렉토리에서 FAISS 인덱스 저장
+                temp_dir = tempfile.gettempdir()
+                temp_index_path = os.path.join(temp_dir, f"faiss_{self.user_id}.index")
+                temp_chunk_ids_path = os.path.join(temp_dir, f"faiss_{self.user_id}_chunks.pkl")
                 
-        except ImportError:
-            # fcntl이 없는 환경 (Windows 등)에서는 기본 저장 방식 사용
-            try:
-                self._faiss.write_index(self.index, self.index_path)
-                with open(self.chunk_ids_path, 'w') as f:
+                if self._faiss and self.index is not None:
+                    self._faiss.write_index(self.index, temp_index_path)
+                    print(f"사용자 {self.user_id}: FAISS 인덱스를 임시 디렉토리에 저장됨: {temp_index_path}")
+                
+                # 청크 ID 저장
+                with open(temp_chunk_ids_path, 'w') as f:
                     json.dump(self.chunk_ids, f)
-                print(f"사용자 {self.user_id}: FAISS 인덱스 저장 완료 (기본 방식)")
-            except Exception as basic_err:
-                print(f"사용자 {self.user_id}: 기본 저장 방식 실패: {basic_err}")
-        except Exception as e:
-            print(f"사용자 {self.user_id}: 인덱스 저장 실패: {e}")
+                print(f"사용자 {self.user_id}: 청크 ID 저장 완료: {temp_chunk_ids_path}")
+                
+                # 임시 경로를 실제 경로로 업데이트
+                self.index_path = temp_index_path
+                self.chunk_ids_path = temp_chunk_ids_path
+                
+            except Exception as e:
+                print(f"사용자 {self.user_id}: CloudType 환경 FAISS 저장 실패: {e}")
+                print(f"사용자 {self.user_id}: FAISS 저장 실패하지만 데이터베이스에는 임베딩이 저장됨")
+        else:
+            # 로컬 환경: 기존 방식 사용
+            try:
+                import fcntl
+                import tempfile
+                
+                # 임시 파일로 저장 후 원자적 이동 (동시성 문제 해결)
+                temp_index_path = self.index_path + ".tmp"
+                temp_chunk_ids_path = self.chunk_ids_path + ".tmp"
+                
+                # FAISS 인덱스 저장
+                if self._faiss and self.index is not None:
+                    self._faiss.write_index(self.index, temp_index_path)
+                
+                # 청크 ID 저장
+                with open(temp_chunk_ids_path, 'w') as f:
+                    json.dump(self.chunk_ids, f)
+                
+                # 원자적으로 파일 이동 (다른 프로세스에서 읽는 도중 덮어쓰기 방지)
+                try:
+                    os.rename(temp_index_path, self.index_path)
+                    os.rename(temp_chunk_ids_path, self.chunk_ids_path)
+                    print(f"사용자 {self.user_id}: FAISS 인덱스 저장 완료")
+                except OSError as rename_err:
+                    print(f"사용자 {self.user_id}: 파일 이동 실패: {rename_err}")
+                    # 임시 파일 정리
+                    if os.path.exists(temp_index_path):
+                        os.remove(temp_index_path)
+                    if os.path.exists(temp_chunk_ids_path):
+                        os.remove(temp_chunk_ids_path)
+                    raise
+                    
+            except ImportError:
+                # fcntl이 없는 환경 (Windows 등)에서는 기본 저장 방식 사용
+                try:
+                    if self._faiss and self.index is not None:
+                        self._faiss.write_index(self.index, self.index_path)
+                    with open(self.chunk_ids_path, 'w') as f:
+                        json.dump(self.chunk_ids, f)
+                    print(f"사용자 {self.user_id}: FAISS 인덱스 저장 완료 (기본 방식)")
+                except Exception as basic_err:
+                    print(f"사용자 {self.user_id}: 기본 저장 방식 실패: {basic_err}")
+            except Exception as e:
+                print(f"사용자 {self.user_id}: 인덱스 저장 실패: {e}")
     
     def create_embedding(self, text):
         """텍스트를 임베딩으로 변환"""

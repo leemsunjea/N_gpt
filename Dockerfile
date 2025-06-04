@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS builder
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -8,19 +8,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# 필수 파일만 복사
+# Builder stage: copy requirements and install dependencies
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt --prefix=/install \
+    && pip cache purge
+
+# Runtime stage
+FROM python:3.11-slim
+WORKDIR /app
+# Copy installed packages
+COPY --from=builder /install /usr/local
+
+# Copy application code and assets
 COPY *.py ./
-COPY requirements.txt ./requirements.txt
 COPY templates ./templates/
 COPY start.sh ./
 RUN chmod +x start.sh
-
 # 필요한 디렉토리 생성
 RUN mkdir -p static
-
-# 필수 패키지만 설치
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip cache purge
 
 # 포트 노출
 EXPOSE 8000
