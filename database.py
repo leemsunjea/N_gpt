@@ -56,6 +56,11 @@ else:
 # 세션 팩토리
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+# 단일 AsyncSession을 반환하는 유틸리티 함수
+def get_db_session():
+    """AsyncSession을 직접 context manager로 사용할 수 있도록 반환합니다."""
+    return async_session()
+
 # Base 클래스
 Base = declarative_base()
 
