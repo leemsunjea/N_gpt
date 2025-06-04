@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, UploadFile, Form, Depends, HTTPException, Req
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 import json
 import os
 import glob
@@ -163,7 +163,12 @@ async def startup_event():
     from database import engine, Base
     print("서버 시작 시 DB 초기화 중...")
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        # 기존 메서드: metadata.drop_all은 종속성 오류 발생
+        # 수동으로 레거시 및 모델 테이블을 순서대로 CASCADE 삭제
+        from sqlalchemy import text
+        for tbl in ["chunks", "document_chunks", "documents", "users"]:
+            await conn.execute(text(f"DROP TABLE IF EXISTS {tbl} CASCADE"))
+        # 모든 테이블 재생성
         await conn.run_sync(Base.metadata.create_all)
     print("DB 초기화 완료: 모든 테이블이 재생성되었습니다.")
 
