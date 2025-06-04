@@ -1,4 +1,4 @@
-FROM python:3.11-slim AS builder
+FROM python:3.10-slim AS builder
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt --prefix=/install \
     && pip cache purge
 
 # Runtime stage
-FROM python:3.11-slim
+FROM python:3.10-slim
 WORKDIR /app
 # Copy installed packages
 COPY --from=builder /install /usr/local
