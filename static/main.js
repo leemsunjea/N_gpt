@@ -7,10 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('문서가 로드되었습니다.');
     
     // UI 요소
-    const chatForm = document.getElementById('chat-form');
-    const chatInput = document.getElementById('chat-input');
-    const messagesContainer = document.getElementById('messages');
-    const uploadForm = document.getElementById('upload-form');
+    const chatForm = document.getElementById('chatForm'); // ID 변경
+    const chatInput = document.getElementById('chatInput'); // ID 변경
+    const messagesContainer = document.getElementById('chatMessages'); // ID 변경
+    const uploadForm = document.getElementById('uploadForm'); // ID 변경
     
     // 채팅 폼 제출 이벤트 처리
     if (chatForm) {
@@ -78,7 +78,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('오류:', error);
                 appendMessage('bot', '❌ 오류가 발생했습니다: ' + error.message);
             } finally {
-                sendButton.disabled = false;
+                // sendButton 변수가 정의되지 않았으므로, chatForm 내부의 submit 버튼을 사용하도록 수정하거나,
+                // sendButton을 올바르게 정의해야 합니다. 여기서는 chatForm의 submit 버튼을 직접 참조합니다.
+                const sendButton = chatForm ? chatForm.querySelector('button[type="submit"]') : null;
+                if (sendButton) {
+                    sendButton.disabled = false;
+                }
             }
         });
     }
@@ -169,7 +174,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function appendMessage(type, content) {
         const messageElement = document.createElement('div');
         messageElement.className = `message ${type}-message`;
-        messageElement.textContent = content;
+        // Markdown 렌더링을 위해 innerHTML 사용 및 marked.parse 호출 부분 수정
+        if (type === 'bot') {
+            messageElement.innerHTML = `<div class="markdown-content">${marked.parse(content)}</div>`;
+        } else {
+            messageElement.textContent = content;
+        }
         messagesContainer.appendChild(messageElement);
         
         // 스크롤을 가장 아래로 이동
