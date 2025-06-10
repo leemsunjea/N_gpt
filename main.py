@@ -6,6 +6,10 @@ from sqlalchemy import select, func, text
 import json
 import os
 import glob
+import re
+import unicodedata
+from datetime import datetime
+import traceback
 # uvicorn은 조건부 import (CloudType 환경에서는 전역 설치)
 try:
     import uvicorn
@@ -15,7 +19,6 @@ try:
     import psutil
 except ImportError:
     psutil = None
-import traceback
 
 from database import get_db, get_db_session, create_tables, User, Document, DocumentChunk, async_session
 from document_processor import DocumentProcessor
@@ -23,8 +26,6 @@ from document_processor import DocumentProcessor
 from lightweight_embedding import get_embedding_service, embedding_manager
 from chat_service import chat_service
 from user_session import get_current_user_id, set_user_cookie, session_manager
-import re
-import unicodedata
 
 # PostgreSQL 호환 텍스트 정제 함수들
 def clean_for_postgresql(text):
