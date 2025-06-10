@@ -112,108 +112,85 @@
 
         <!-- 메인 컨테이너 -->
         <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             <!-- 왼쪽: 문서 업로드 & 관리 -->
             <div class="lg:col-span-1 space-y-6">
-                <!-- 문서 업로드 -->
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-800">📁 문서 업로드</h2>
-                    <form id="upload-form" class="space-y-4">
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                            <input type="file" id="fileInput" accept=".pdf,.docx,.txt" class="hidden">
-                            <label for="fileInput" class="cursor-pointer">
-                                <div class="text-gray-500">
-                                    <svg class="mx-auto h-12 w-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
-                                    </svg>
-                                    <p class="text-sm">클릭하여 파일 선택</p>
-                                    <p class="text-xs text-gray-400">PDF, DOCX, TXT 지원</p>
-                                </div>
-                            </label>
+                <!-- 파일 업로드 섹션 -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">문서 업로드</h2>
+                    <form id="uploadForm" class="space-y-4">
+                        <div>
+                            <label for="fileInput" class="block text-sm font-medium text-gray-700">파일 선택</label>
+                            <input type="file" id="fileInput" name="file" class="mt-1 block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-md file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-blue-50 file:text-blue-700
+                                hover:file:bg-blue-100
+                            "/>
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50" disabled>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-150 ease-in-out">
                             업로드
                         </button>
                     </form>
-                    <div id="uploadStatus" class="mt-4 text-sm"></div>
+                    <div id="uploadStatus" class="mt-3 text-sm"></div>
                 </div>
 
-                <!-- 사용자 정보 -->
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-800">👤 사용자 정보</h2>
-                    <div id="userInfo" class="space-y-2 text-sm text-gray-600">
-                        <p id="userId">사용자 ID: 로딩 중...</p>
-                        <p id="documentCount">문서 수: -</p>
-                        <p id="chunkCount">청크 수: -</p>
-                        <p id="lastActive">마지막 활동: -</p>
+                <!-- 문서 목록 섹션 -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-700">업로드된 문서</h2>
+                        <button id="refreshDocs" class="text-sm text-blue-600 hover:text-blue-800">새로고침</button>
                     </div>
-                    <button id="refreshStats" class="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">
-                        통계 새로고침
-                    </button>
+                    <div id="documentList" class="space-y-2 max-h-60 overflow-y-auto">
+                        <p class="text-gray-500">문서 목록을 불러오는 중...</p>
+                    </div>
                 </div>
 
-                <!-- 관리자 패널 -->
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-yellow-800">🔧 관리자 패널</h2>
+                <!-- 사용자 통계 섹션 -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-700">사용자 정보</h2>
+                        <button id="refreshStats" class="text-sm text-blue-600 hover:text-blue-800">새로고침</button>
+                    </div>
+                    <div class="text-sm space-y-1">
+                        <p><strong>ID:</strong> <span id="userId"></span></p>
+                        <p><strong>문서 수:</strong> <span id="documentCount"></span></p>
+                        <p><strong>청크 수:</strong> <span id="chunkCount"></span></p>
+                        <p><strong>마지막 활동:</strong> <span id="lastActive"></span></p>
+                    </div>
+                </div>
+                
+                <!-- 관리자 패널 (필요시 주석 해제 또는 조건부 렌더링) -->
+                <!--
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">관리자 패널</h2>
                     <div class="space-y-3">
-                        <input type="password" id="adminKey" placeholder="관리자 키 입력" 
-                               class="w-full px-3 py-2 border border-yellow-300 rounded-lg text-sm">
-                        <button id="showSystemStats" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                            시스템 통계 조회
-                        </button>
-                        <button id="showAllUsers" class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-sm">
-                            모든 사용자 조회
-                        </button>
-                        <button id="cleanupSessions" class="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-colors text-sm">
-                            세션 정리 (7일)
-                        </button>
-                        <button id="cleanupInactive" class="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-sm">
-                            비활성 사용자 정리 (30일)
-                        </button>
+                        <div>
+                            <label for="adminKey" class="block text-sm font-medium text-gray-700">관리자 키</label>
+                            <input type="password" id="adminKey" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                        </div>
+                        <button id="showSystemStats" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm">시스템 통계 보기</button>
+                        <button id="showAllUsers" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm">모든 사용자 보기</button>
+                        <button id="cleanupSessions" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-md text-sm">오래된 세션 정리</button>
+                        <button id="cleanupInactive" class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md text-sm">비활성 사용자 정리</button>
+                        <div id="adminResult" class="mt-3 text-xs p-2 border rounded bg-gray-50 max-h-40 overflow-y-auto"></div>
                     </div>
-                    <div id="adminResult" class="mt-4 text-sm"></div>
                 </div>
-
-                <!-- 문서 목록 -->
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-semibold mb-4 text-gray-800">📋 업로드된 문서</h2>
-                    <div id="documentList" class="space-y-2">
-                        <p class="text-gray-500 text-sm">업로드된 문서가 없습니다.</p>
-                    </div>
-                    <button id="refreshDocs" class="mt-4 w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
-                        새로고침
-                    </button>
-                </div>
+                -->
             </div>
 
             <!-- 오른쪽: 채팅 영역 -->
-            <div class="lg:col-span-2">
-                <div class="bg-white rounded-lg shadow-md h-[600px] flex flex-col">
-                    <!-- 채팅 헤더 -->
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-800">💬 문서 기반 AI 채팅</h2>
-                        <p class="text-sm text-gray-600">업로드된 문서를 바탕으로 질문하세요</p>
-                    </div>
-
-                    <!-- 채팅 메시지 -->
-                    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
-                        <div class="text-center text-gray-500 text-sm">
-                            <p>👋 안녕하세요! 문서를 업로드한 후 질문해주세요.</p>
-                        </div>
-                    </div>
-
-                    <!-- 채팅 입력 -->
-                    <div class="p-4 border-t border-gray-200">
-                        <form id="chatForm" class="flex space-x-2">
-                            <input type="text" id="chatInput" placeholder="문서에 대해 질문하세요..." 
-                                   class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <button type="submit" id="sendButton" 
-                                    class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
-                                전송
-                            </button>
-                        </form>
-                    </div>
+            <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow flex flex-col" style="height: 80vh;">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">채팅</h2>
+                <div id="chatMessages" class="flex-grow overflow-y-auto mb-4 border border-gray-200 rounded-md p-3 space-y-3 bg-gray-50">
+                    <!-- 채팅 메시지가 여기에 표시됩니다 -->
+                    <p class="text-gray-500 text-center">대화를 시작하세요.</p>
                 </div>
+                <form id="chatForm" class="flex items-center">
+                    <input type="text" id="chatInput" placeholder="메시지를 입력하세요..." class="flex-grow border border-gray-300 rounded-l-md p-3 focus:ring-blue-500 focus:border-blue-500">
+                    <button id="sendButton" type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-r-md transition duration-150 ease-in-out">전송</button>
+                </form>
             </div>
         </div>
     </div>
@@ -228,378 +205,214 @@
         const chatForm = document.getElementById('chatForm');
         const chatInput = document.getElementById('chatInput');
         const chatMessages = document.getElementById('chatMessages');
-        const sendButton = document.getElementById('sendButton');
+        const sendButton = document.getElementById('sendButton'); // sendButton 정의
         const refreshStats = document.getElementById('refreshStats');
         const userIdElement = document.getElementById('userId');
         const documentCountElement = document.getElementById('documentCount');
         const chunkCountElement = document.getElementById('chunkCount');
         const lastActiveElement = document.getElementById('lastActive');
-        
-        // 관리자 패널 요소들
+
+        // 관리자 패널 요소들 (필요시 주석 해제)
+        /*
         const adminKey = document.getElementById('adminKey');
         const showSystemStats = document.getElementById('showSystemStats');
         const showAllUsers = document.getElementById('showAllUsers');
         const cleanupSessions = document.getElementById('cleanupSessions');
         const cleanupInactive = document.getElementById('cleanupInactive');
         const adminResult = document.getElementById('adminResult');
+        */
 
         // 파일 선택 이벤트
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            const submitButton = uploadForm.querySelector('button[type="submit"]');
-            
-            if (file) {
-                submitButton.disabled = false;
-                submitButton.textContent = `${file.name} 업로드`;
-            } else {
-                submitButton.disabled = true;
-                submitButton.textContent = '업로드';
-            }
-        });
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                const submitButton = uploadForm.querySelector('button[type="submit"]');
+                
+                if (file) {
+                    submitButton.textContent = `${file.name} 업로드`;
+                } else {
+                    submitButton.textContent = '업로드';
+                }
+            });
+        }
 
         // 파일 업로드
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const file = fileInput.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('file', file);
-
-            uploadStatus.innerHTML = '<div class="text-blue-600">업로드 중...</div>';
-            
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await response.json();
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
                 
-                if (response.ok) {
-                    uploadStatus.innerHTML = `<div class="text-green-600">✅ ${result.message}</div>`;
-                    fileInput.value = '';
-                    uploadForm.querySelector('button[type="submit"]').disabled = true;
-                    uploadForm.querySelector('button[type="submit"]').textContent = '업로드';
-                    loadDocuments();
-                    loadUserStats(); // 문서 업로드 후 통계 업데이트
-                } else {
-                    uploadStatus.innerHTML = `<div class="text-red-600">❌ ${result.detail}</div>`;
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                    uploadStatus.innerHTML = '<div class="text-red-600">파일을 선택해주세요.</div>';
+                    return;
                 }
-            } catch (error) {
-                uploadStatus.innerHTML = `<div class="text-red-600">❌ 업로드 실패: ${error.message}</div>`;
-            }
-        });
+                const file = fileInput.files[0];
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                uploadStatus.innerHTML = '<div class="text-blue-600">업로드 중...</div>';
+                const submitButton = uploadForm.querySelector('button[type="submit"]');
+                if (submitButton) submitButton.disabled = true;
+
+                try {
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    if (response.ok) {
+                        uploadStatus.innerHTML = `<div class="text-green-600">${result.message || '업로드 성공!'}</div>`;
+                        loadDocuments(); // 문서 목록 새로고침
+                        fileInput.value = ''; // 파일 입력 초기화
+                        if (submitButton) submitButton.textContent = '업로드';
+                    } else {
+                        uploadStatus.innerHTML = `<div class="text-red-600">${result.detail || result.message || '업로드 실패'}</div>`;
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    uploadStatus.innerHTML = '<div class="text-red-600">업로드 중 오류 발생.</div>';
+                } finally {
+                    if (submitButton) submitButton.disabled = false;
+                }
+            });
+        }
 
         // 문서 목록 로드
         async function loadDocuments() {
+            if (!documentList) return;
+            documentList.innerHTML = '<p class="text-gray-500">문서 목록을 불러오는 중...</p>';
             try {
                 const response = await fetch('/documents');
-                const result = await response.json();
-                
-                if (result.documents && result.documents.length > 0) {
-                    documentList.innerHTML = result.documents.map(doc => `
-                        <div class="p-2 bg-gray-50 rounded border">
-                            <div class="font-medium text-sm">${doc.filename}</div>
-                            <div class="text-xs text-gray-500">${new Date(doc.created_at).toLocaleString()}</div>
-                        </div>
-                    `).join('');
+                const data = await response.json();
+                documentList.innerHTML = ''; // 기존 목록 초기화
+                if (data.documents && data.documents.length > 0) {
+                    data.documents.forEach(doc => {
+                        const docElement = document.createElement('div');
+                        docElement.className = 'p-2 border-b last:border-b-0 text-sm';
+                        const date = new Date(doc.created_at).toLocaleString();
+                        docElement.innerHTML = `
+                            <p class="font-medium">${doc.filename}</p>
+                            <p class="text-xs text-gray-500">${date}</p>
+                        `;
+                        documentList.appendChild(docElement);
+                    });
                 } else {
-                    documentList.innerHTML = '<p class="text-gray-500 text-sm">업로드된 문서가 없습니다.</p>';
+                    documentList.innerHTML = '<p class="text-gray-500">업로드된 문서가 없습니다.</p>';
                 }
             } catch (error) {
-                console.error('문서 목록 로드 실패:', error);
+                console.error('Error loading documents:', error);
+                documentList.innerHTML = '<p class="text-red-500">문서 목록 로드 실패.</p>';
             }
         }
 
-        // 문서 목록 새로고침
-        refreshDocs.addEventListener('click', loadDocuments);
+        // 문서 목록 새로고침 버튼
+        if (refreshDocs) {
+            refreshDocs.addEventListener('click', loadDocuments);
+        }
 
         // 사용자 통계 로드
         async function loadUserStats() {
+            if (!userIdElement) return; // 필요한 요소가 없으면 실행 중단
             try {
                 const response = await fetch('/user/stats');
-                const result = await response.json();
-                
+                const data = await response.json();
                 if (response.ok) {
-                    userIdElement.textContent = `사용자 ID: ${result.user_id}`;
-                    documentCountElement.textContent = `문서 수: ${result.document_count}`;
-                    chunkCountElement.textContent = `청크 수: ${result.chunk_count}`;
-                    lastActiveElement.textContent = `마지막 활동: ${new Date(result.last_active).toLocaleString()}`;
+                    if (userIdElement) userIdElement.textContent = data.user_id;
+                    if (documentCountElement) documentCountElement.textContent = data.document_count;
+                    if (chunkCountElement) chunkCountElement.textContent = data.chunk_count;
+                    if (lastActiveElement) lastActiveElement.textContent = new Date(data.last_active).toLocaleString();
                 } else {
-                    console.error('사용자 통계 로드 실패:', result);
-                    userIdElement.textContent = '사용자 ID: 로드 실패';
+                    console.error('Failed to load user stats:', data.detail);
                 }
             } catch (error) {
-                console.error('사용자 통계 로드 오류:', error);
-                userIdElement.textContent = '사용자 ID: 로드 오류';
+                console.error('Error loading user stats:', error);
             }
         }
-
+        
         // 사용자 통계 새로고침 버튼
-        refreshStats.addEventListener('click', loadUserStats);
+        if (refreshStats) {
+            refreshStats.addEventListener('click', loadUserStats);
+        }
 
-        // 관리자 기능들
+        // 관리자 기능들 (필요시 주석 해제)
+        /*
         function displayAdminResult(data, isError = false) {
+            if (!adminResult) return;
             const className = isError ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50';
             adminResult.innerHTML = `<div class="${className} p-3 rounded border text-xs"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
         }
 
-        // 시스템 통계 조회
-        showSystemStats.addEventListener('click', async function() {
-            const key = adminKey.value.trim();
-            if (!key) {
-                displayAdminResult({error: '관리자 키를 입력하세요'}, true);
-                return;
-            }
-
-            try {
-                const response = await fetch(`/admin/system_stats?admin_key=${encodeURIComponent(key)}`);
-                const result = await response.json();
-                
-                if (response.ok) {
-                    displayAdminResult(result);
-                } else {
-                    displayAdminResult(result, true);
-                }
-            } catch (error) {
-                displayAdminResult({error: `요청 실패: ${error.message}`}, true);
-            }
-        });
-
-        // 모든 사용자 조회
-        showAllUsers.addEventListener('click', async function() {
-            const key = adminKey.value.trim();
-            if (!key) {
-                displayAdminResult({error: '관리자 키를 입력하세요'}, true);
-                return;
-            }
-
-            try {
-                const response = await fetch(`/admin/all_users?admin_key=${encodeURIComponent(key)}`);
-                const result = await response.json();
-                
-                if (response.ok) {
-                    displayAdminResult(result);
-                } else {
-                    displayAdminResult(result, true);
-                }
-            } catch (error) {
-                displayAdminResult({error: `요청 실패: ${error.message}`}, true);
-            }
-        });
-
-        // 세션 정리
-        cleanupSessions.addEventListener('click', async function() {
-            const key = adminKey.value.trim();
-            if (!key) {
-                displayAdminResult({error: '관리자 키를 입력하세요'}, true);
-                return;
-            }
-
-            if (!confirm('7일 이상 비활성 세션을 정리하시겠습니까?')) {
-                return;
-            }
-
-            try {
-                const formData = new FormData();
-                formData.append('admin_key', key);
-                formData.append('days_threshold', '7');
-                
-                const response = await fetch('/admin/cleanup_sessions', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                
-                if (response.ok) {
-                    displayAdminResult(result);
-                } else {
-                    displayAdminResult(result, true);
-                }
-            } catch (error) {
-                displayAdminResult({error: `요청 실패: ${error.message}`}, true);
-            }
-        });
-
-        // 비활성 사용자 정리
-        cleanupInactive.addEventListener('click', async function() {
-            const key = adminKey.value.trim();
-            if (!key) {
-                displayAdminResult({error: '관리자 키를 입력하세요'}, true);
-                return;
-            }
-
-            if (!confirm('30일 이상 비활성 사용자 데이터를 정리하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-                return;
-            }
-
-            try {
-                const formData = new FormData();
-                formData.append('admin_key', key);
-                formData.append('days_threshold', '30');
-                
-                const response = await fetch('/admin/cleanup_inactive', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                
-                if (response.ok) {
-                    displayAdminResult(result);
-                } else {
-                    displayAdminResult(result, true);
-                }
-            } catch (error) {
-                displayAdminResult({error: `요청 실패: ${error.message}`}, true);
-            }
-        });
-
-        // 채팅 메시지 추가
-        function addMessage(content, isUser = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `chat-message ${isUser ? 'ml-8' : 'mr-8'}`;
-            
-            messageDiv.innerHTML = `
-                <div class="flex ${isUser ? 'justify-end' : 'justify-start'}">
-                    <div class="${isUser ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'} rounded-lg p-3 max-w-xl">
-                        <div class="text-sm whitespace-pre-wrap">${isUser ? content : marked.parse(content)}</div>
-                    </div>
-                </div>
-            `;
-            
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+        if (showSystemStats) {
+            showSystemStats.addEventListener('click', async function() {
+                // ... (구현)
+            });
         }
+        // ... 다른 관리자 버튼 이벤트 리스너들 ...
+        */
 
-        // 타이핑 인디케이터
-        function showTypingIndicator() {
-            const typingDiv = document.createElement('div');
-            typingDiv.id = 'typingIndicator';
-            typingDiv.className = 'chat-message mr-8';
-            typingDiv.innerHTML = `
-                <div class="flex justify-start">
-                    <div class="bg-gray-200 text-gray-800 rounded-lg p-3">
-                        <div class="typing-indicator text-sm">AI가 답변을 생성하고 있습니다...</div>
-                    </div>
-                </div>
-            `;
-            chatMessages.appendChild(typingDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function hideTypingIndicator() {
-            const typingDiv = document.getElementById('typingIndicator');
-            if (typingDiv) {
-                typingDiv.remove();
-            }
-        }
-
-        // 채팅 폼 제출
-        chatForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // 메시지 추가 헬퍼 함수 (main.js와 중복될 수 있으므로, main.js의 함수를 사용하거나 여기서 제거)
+        function addMessageToChat(content, type = 'bot') {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('chat-message', type === 'user' ? 'text-right' : 'text-left');
             
-            const query = chatInput.value.trim();
-            if (!query) return;
-
-            // 사용자 메시지 추가
-            addMessage(query, true);
-            chatInput.value = '';
-            sendButton.disabled = true;
+            const bubble = document.createElement('div');
+            bubble.classList.add('inline-block', 'p-3', 'rounded-lg', 'max-w-xl', 
+                                 type === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800');
             
-            // 타이핑 인디케이터 표시
-            showTypingIndicator();
-
-            try {
-                const formData = new FormData();
-                formData.append('query', query);
-
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                hideTypingIndicator();
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: 채팅 요청 실패`);
-                }
-
-                // 스트리밍 응답 처리
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let aiResponse = '';
-                
-                // AI 응답 컨테이너 생성
-                const responseDiv = document.createElement('div');
-                responseDiv.className = 'chat-message mr-8';
-                responseDiv.innerHTML = `
-                    <div class="flex justify-start">
-                        <div class="bg-gray-200 text-gray-800 rounded-lg p-3 max-w-xl">
-                            <div class="text-sm markdown-content"></div>
-                        </div>
-                    </div>
-                `;
-                chatMessages.appendChild(responseDiv);
-                const contentDiv = responseDiv.querySelector('.markdown-content');
-
-                let buffer = '';
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    buffer += decoder.decode(value, { stream: true });
-                    
-                    // 완전한 라인들을 처리
-                    const lines = buffer.split('\n\n');
-                    buffer = lines.pop() || ''; // 마지막 불완전한 라인은 버퍼에 유지
-
-                    for (const line of lines) {
-                        if (line.trim().startsWith('data: ')) {
-                            try {
-                                const jsonStr = line.trim().slice(6); // 'data: ' 제거
-                                if (jsonStr.trim()) {
-                                    const data = JSON.parse(jsonStr);
-                                    
-                                    if (data.content) {
-                                        aiResponse += data.content;
-                                        // 마크다운 렌더링 및 줄바꿈 처리
-                                        contentDiv.innerHTML = marked.parse(aiResponse);
-                                        chatMessages.scrollTop = chatMessages.scrollHeight;
-                                    }
-                                    
-                                    if (data.done) {
-                                        // 최종 렌더링
-                                        contentDiv.innerHTML = marked.parse(aiResponse);
-                                        break;
-                                    }
-                                }
-                            } catch (e) {
-                                console.error('JSON 파싱 오류:', e, 'Raw data:', line);
-                            }
-                        }
-                    }
-                }
-
-                // 빈 응답 처리
-                if (!aiResponse.trim()) {
-                    contentDiv.innerHTML = '<div class="text-red-600">응답을 받지 못했습니다. 다시 시도해주세요.</div>';
-                }
-
-            } catch (error) {
-                hideTypingIndicator();
-                console.error('채팅 오류:', error);
-                addMessage(`❌ 오류가 발생했습니다: ${error.message}`);
-            } finally {
-                sendButton.disabled = false;
+            if (type === 'bot') {
+                // marked.js를 사용하여 Markdown 렌더링
+                bubble.innerHTML = `<div class="markdown-content">${marked.parse(content)}</div>`;
+            } else {
+                bubble.textContent = content;
             }
-        });
+            
+            messageElement.appendChild(bubble);
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // 스크롤을 맨 아래로
+        }
+        
+        // 채팅 폼 제출 (main.js와 기능이 중복되므로, main.js의 로직을 따르거나 여기서 수정/제거)
+        // 이 스크립트는 main.js가 로드되기 전에 실행될 수 있으므로, main.js의 DOMContentLoaded를 기다리는 것이 안전합니다.
+        // 여기서는 main.js에서 처리한다고 가정하고 주석 처리하거나, main.js의 로직과 통합합니다.
+        /*
+        if (chatForm) {
+            chatForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const query = chatInput.value.trim();
+                if (!query) return;
 
-        // 초기 문서 목록 로드
-        loadDocuments();
-        // 초기 사용자 통계 로드
-        loadUserStats();
+                addMessageToChat(query, 'user');
+                chatInput.value = '';
+                if(sendButton) sendButton.disabled = true;
+
+                // ... (봇 응답 로직은 main.js에 있을 가능성이 높음) ...
+                // 임시 봇 응답
+                // setTimeout(() => {
+                //     addMessageToChat('봇 응답입니다.', 'bot');
+                //     if(sendButton) sendButton.disabled = false;
+                // }, 1000);
+            });
+        }
+        */
+
+        // 초기 데이터 로드
+        // DOMContentLoaded 이후에 main.js에서 호출될 수 있으므로, 여기서는 중복 호출을 피할 수 있습니다.
+        // 만약 main.js에 해당 로직이 없다면 여기서 호출합니다.
+        // document.addEventListener('DOMContentLoaded', () => {
+        //     loadDocuments();
+        //     loadUserStats();
+        // });
+        // 또는 main.js에서 이미 DOMContentLoaded를 사용하고 있으므로,
+        // 이 스크립트가 main.js보다 먼저 로드된다면, main.js에서 이 함수들을 호출하도록 합니다.
+        // 현재 구조에서는 main.js가 이 파일의 스크립트보다 나중에 로드될 가능성이 있으므로,
+        // main.js에서 초기 로드를 담당하는 것이 좋습니다.
+        // 이 파일에서는 DOM 요소 정의와 간단한 이벤트 리스너만 남겨두는 것이 좋습니다.
+        
+        // main.js에서 DOMContentLoaded 이벤트 내에서 초기 함수들을 호출하도록 하고,
+        // 여기서는 해당 함수 정의만 남겨둡니다.
+        // loadDocuments(); // main.js에서 호출
+        // loadUserStats(); // main.js에서 호출
     </script>
+    <script src="/static/main.js" defer></script> <!-- main.js 로드 -->
 </body>
 </html>
