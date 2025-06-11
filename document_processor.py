@@ -1,10 +1,10 @@
 import os
-import PyPDF2 # PdfReadError 문제로 일단 주석 처리
 import docx
 import re
 import unicodedata
 from io import BytesIO
-from PyPDF2 import PdfReader, PdfReadError # PdfReadError 문제로 일단 주석 처리
+from PyPDF2 import PdfReader # PdfReadError는 PyPDF2.errors에서 가져옵니다.
+from PyPDF2.errors import PdfReadError # PdfReadError 임포트 경로 수정
 
 class DocumentProcessor:
     @staticmethod
@@ -66,8 +66,6 @@ class DocumentProcessor:
         except Exception as e:
             print(f"PDF 텍스트 추출 중 일반 오류 발생: {e}")
             return "" # 오류 발생 시 빈 문자열 반환
-        # print("PyPDF2 라이브러리 문제로 PDF 처리가 비활성화되었습니다.") # 이 줄은 제거하거나 주석 처리
-        # return "" # 임시로 빈 문자열 반환 -> 이 줄은 제거
 
     @staticmethod
     def extract_text_from_docx(file_content):
