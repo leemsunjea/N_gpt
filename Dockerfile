@@ -26,10 +26,9 @@ COPY --from=builder /install /usr/local
 # Copy application code and assets
 COPY *.py ./
 COPY templates ./templates/
+COPY static ./static
 COPY start.sh ./
 RUN chmod +x start.sh
-# 필요한 디렉토리 생성
-RUN mkdir -p static
 
 # 포트 노출
 EXPOSE 8000
