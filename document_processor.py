@@ -1,10 +1,10 @@
 import os
-# import PyPDF2 # PdfReadError 문제로 일단 주석 처리
+import PyPDF2 # PdfReadError 문제로 일단 주석 처리
 import docx
 import re
 import unicodedata
 from io import BytesIO
-# from PyPDF2 import PdfReader, PdfReadError # PdfReadError 문제로 일단 주석 처리
+from PyPDF2 import PdfReader, PdfReadError # PdfReadError 문제로 일단 주석 처리
 
 class DocumentProcessor:
     @staticmethod
@@ -51,23 +51,23 @@ class DocumentProcessor:
     @staticmethod
     def extract_text_from_pdf(file_content):
         """PDF에서 텍스트 추출"""
-        # try:
-        #     # PyPDF2 관련 코드는 PdfReadError 문제 해결 후 활성화
-        #     pdf_reader = PdfReader(BytesIO(file_content))
-        #     text = ""
-        #     for page in pdf_reader.pages:
-        #         page_text = page.extract_text()
-        #         if page_text: 
-        #             text += DocumentProcessor.clean_text(page_text) + "\n" # 각 페이지 텍스트 정제
-        #     return text.strip() # 최종 텍스트의 앞뒤 공백 제거
-        # except PdfReadError as pre: 
-        #     print(f"PDF 읽기 오류 (PyPDF2): {pre}")
-        #     return "" # 오류 발생 시 빈 문자열 반환
-        # except Exception as e:
-        #     print(f"PDF 텍스트 추출 중 일반 오류 발생: {e}")
-        #     return "" # 오류 발생 시 빈 문자열 반환
-        print("PyPDF2 라이브러리 문제로 PDF 처리가 비활성화되었습니다.")
-        return "" # 임시로 빈 문자열 반환
+        try:
+            # PyPDF2 관련 코드는 PdfReadError 문제 해결 후 활성화
+            pdf_reader = PdfReader(BytesIO(file_content))
+            text = ""
+            for page in pdf_reader.pages:
+                page_text = page.extract_text()
+                if page_text: 
+                    text += DocumentProcessor.clean_text(page_text) + "\\n" # 각 페이지 텍스트 정제
+            return text.strip() # 최종 텍스트의 앞뒤 공백 제거
+        except PdfReadError as pre: 
+            print(f"PDF 읽기 오류 (PyPDF2): {pre}")
+            return "" # 오류 발생 시 빈 문자열 반환
+        except Exception as e:
+            print(f"PDF 텍스트 추출 중 일반 오류 발생: {e}")
+            return "" # 오류 발생 시 빈 문자열 반환
+        # print("PyPDF2 라이브러리 문제로 PDF 처리가 비활성화되었습니다.") # 이 줄은 제거하거나 주석 처리
+        # return "" # 임시로 빈 문자열 반환 -> 이 줄은 제거
 
     @staticmethod
     def extract_text_from_docx(file_content):
